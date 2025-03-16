@@ -111,4 +111,5 @@ public class NewsServiceImpl implements NewsService {
         logger.info("The Author data is {}", userEntity);
         return userEntity;
     }
+
 }

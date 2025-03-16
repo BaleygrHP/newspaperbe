@@ -79,6 +79,20 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(userEntity);
     }
 
+    @Override
+    public UserDto getUserById(UserDto userDto) {
+        logger.info("Get userName and Password {}", userDto);
+        String userName = userDto.getUserName();
+        String password = userDto.getPassword();
+        System.out.println(userName+password);
+        if (null == userName  || null == password) {
+            throw new BadRequestException("Not found id for this user");
+        }
+        logger.info("Get userName and Password {}, {}", userName, password);
+        UserEntity userEntity = userRepository.findByUserNameAndPassword(userName,password).orElseThrow(() -> new BadRequestException("Not found user with id: " + userName));
+        return  userMapper.toDto(userEntity);
+    }
+
     private void checkDuplicateUser(UserDto userDtos){
         int existFlag = userRepository.countByUserName(userDtos.getUserName());
         logger.info("User name check: {}. Flag is {}", userDtos.getUserName(), existFlag);

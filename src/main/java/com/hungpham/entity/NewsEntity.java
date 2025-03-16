@@ -13,6 +13,7 @@ public class NewsEntity  extends baseEntity{
     @JoinColumn(name = "category")
     private CategoryEntity category;
 
+    @Lob  // Sử dụng Large Object để lưu HTML dài
     @Column(name = "content")
     private String content;
 

@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("admin")
+@RequestMapping("auth/admin")
+// remove gấp sau khi config auth2.0
+@CrossOrigin(origins = "http://localhost:3000") // Allow frontend origin
 public class UserController {
     @Autowired
     private UserService userService;
@@ -38,7 +40,10 @@ public class UserController {
         return userService.getUserById(id);
     }
 
-
+    @PostMapping("/login")
+    public UserDto login(@RequestBody UserDto userDtos){
+        return userService.getUserById(userDtos);
+    }
 
 
 }

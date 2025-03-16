@@ -12,4 +12,6 @@ public interface UserService {
     UserEntity updateUser(UserDto userDtos);
     UserEntity newUser (UserDto userDtos);
     UserEntity softDeleteUser(String id);
+
+    UserDto getUserById(UserDto userDto);
 }
