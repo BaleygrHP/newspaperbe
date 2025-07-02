@@ -6,10 +6,19 @@ import com.hungpham.common.enums.RoleEnum;
 
 public class UserDto extends AbstractDto<UserDto> {
     private String userName;
+    private String nickName;
     private String password;
     private RoleEnum role;
 
     private boolean status;
+
+    public String getNickName() {
+        return nickName;
+    }
+
+    public void setNickName(String nickName) {
+        this.nickName = nickName;
+    }
 
     public String getUserName() {
         return userName;

@@ -12,6 +12,9 @@ public class CategoryEntity  extends baseEntity{
     @Column(name = "category_name")
     private String categoryName;
 
+    @Column(name="short_description")
+    private String shortDescription;
+
     @Column(name = "delete_flag")
     private boolean deleteFlag;
 
@@ -29,5 +32,13 @@ public class CategoryEntity  extends baseEntity{
 
     public void setDeleteFlag(boolean deleteFlag) {
         this.deleteFlag = deleteFlag;
+    }
+
+    public String getShortDescription() {
+        return shortDescription;
+    }
+
+    public void setShortDescription(String shortDescription) {
+        this.shortDescription = shortDescription;
     }
 }

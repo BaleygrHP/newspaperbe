@@ -29,9 +29,12 @@ public class CategoryServiceImpl implements CategoryService {
     private CategoryMapper categoryMapper;
 
     @Override
-    public List<CategoryEntity> getAllCategories() {
+    public List<CategoryEntity> getAllCategories(String status) {
         logger.info("Start get all category");
-        return categoriesRepository.findAll();
+        if(status.equalsIgnoreCase("all")) {
+           return categoriesRepository.findAll();
+        }
+        return categoriesRepository.findAllByDeleteFlag(Boolean.valueOf(status));
     }
 
     @Override
@@ -45,7 +48,7 @@ public class CategoryServiceImpl implements CategoryService {
         checkDuplicateCategory(categoryDto);
         UUID uuid = UUID.randomUUID();
         categoryDto.setId(String.valueOf(uuid));
-        categoryDto.setCreatedDate(new Date());
+        categoryDto.setCreatedDate(new Date().toString());
         logger.info("New category data {}", categoryDto);
         CategoryEntity categoryEntity = categoryMapper.toEntity(categoryDto);
         return categoriesRepository.save(categoryEntity);
@@ -60,8 +63,8 @@ public class CategoryServiceImpl implements CategoryService {
         CategoryEntity categoryEntity = categoriesRepository.findById(categoryDto.getId()).orElseThrow(
                 ()-> new EntityNotFoundException("Category not found " + categoryDto.getId()));
         logger.info("Category data is {}", categoryDto);
-        categoryDto.setCreatedDate(categoryEntity.getCreatedDate());
-        categoryDto.setUpdatedDate(new Date());
+        categoryDto.setCreatedDate(categoryEntity.getCreatedDate().toString());
+        categoryDto.setUpdatedDate(new Date().toString());
         CategoryEntity finalNewEntity = categoryMapper.toEntity(categoryDto);
         return categoriesRepository.save(finalNewEntity);
     }
@@ -71,8 +74,11 @@ public class CategoryServiceImpl implements CategoryService {
         logger.info("Delete category id {}", id);
         CategoryEntity categoryEntity = categoriesRepository.findById(id).orElseThrow(
                 ()-> new EntityNotFoundException("News not found " + id));
+        if (categoryEntity.isDeleteFlag()){
+            return categoryEntity;
+        }
         categoryEntity.setDeleteFlag(true);
-        categoryEntity.setUpdatedDate(new Date());
+        categoryEntity.setUpdatedDate(new Date().toString());
         return categoriesRepository.save(categoryEntity);
     }
 

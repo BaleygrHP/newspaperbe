@@ -53,8 +53,8 @@ public class UserServiceImpl implements UserService {
         }
         logger.info("Update user id {}", userDtos.getId());
         UserEntity userEntity = userRepository.findById(userDtos.getId()).orElseThrow(() -> new EntityNotFoundException("User not found " + userDtos.getId()));
-        userDtos.setCreatedDate(userEntity.getCreatedDate());
-        userDtos.setUpdatedDate(new Date());
+        userDtos.setCreatedDate(userEntity.getCreatedDate().toString());
+        userDtos.setUpdatedDate(new Date().toString());
         UserEntity finalUserEntity = userMapper.toEntity(userDtos);
         return userRepository.save(finalUserEntity);
     }
@@ -63,7 +63,7 @@ public class UserServiceImpl implements UserService {
     public UserEntity newUser(UserDto userDtos) {
         UUID uuid = UUID.randomUUID();
         userDtos.setId(String.valueOf(uuid));
-        userDtos.setCreatedDate(new Date());
+        userDtos.setCreatedDate(new Date().toString());
         checkDuplicateUser(userDtos);
         logger.info("Add new user {}", userDtos);
         UserEntity userEntity = userMapper.toEntity(userDtos);
@@ -74,8 +74,11 @@ public class UserServiceImpl implements UserService {
     public UserEntity softDeleteUser(String id) {
         logger.info("Delete user which id is {}", id);
         UserEntity userEntity = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found "));
+        if (userEntity.isStatus()){
+            return userEntity;
+        }
         userEntity.setStatus(false);
-        userEntity.setUpdatedDate(new Date());
+        userEntity.setUpdatedDate(new Date().toString());
         return userRepository.save(userEntity);
     }
 

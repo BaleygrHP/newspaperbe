@@ -21,6 +21,17 @@ public class UserEntity extends baseEntity{
     @Column(name = "status")
     private boolean status;
 
+    @Column(name = "user_nick_name")
+    private String nickName;
+
+
+    public String getNickName() {
+        return nickName;
+    }
+
+    public void setNickName(String nickName) {
+        this.nickName = nickName;
+    }
 
     public String getUserName() {
         return userName;

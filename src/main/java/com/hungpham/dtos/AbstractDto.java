@@ -5,8 +5,8 @@ import java.util.Date;
 
 public abstract class AbstractDto<T> {
     private String id;
-    private Date createdDate;
-    private Date updatedDate;
+    private String createdDate;
+    private String updatedDate;
 
     public String getId() {
         return id;
@@ -16,19 +16,19 @@ public abstract class AbstractDto<T> {
         this.id = id;
     }
 
-    public Date getCreatedDate() {
+    public String getCreatedDate() {
         return createdDate;
     }
 
-    public void setCreatedDate(Date createdDate) {
+    public void setCreatedDate(String createdDate) {
         this.createdDate = createdDate;
     }
 
-    public Date getUpdatedDate() {
+    public String getUpdatedDate() {
         return updatedDate;
     }
 
-    public void setUpdatedDate(Date updatedDate) {
+    public void setUpdatedDate(String updatedDate) {
         this.updatedDate = updatedDate;
     }
 }

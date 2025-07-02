@@ -1,5 +1,7 @@
 package com.hungpham.entity;
 
+import com.hungpham.common.enums.TypeContentEnum;
+
 import javax.persistence.*;
 
 
@@ -17,16 +19,28 @@ public class NewsEntity  extends baseEntity{
     @Column(name = "content")
     private String content;
 
+    @Column(name = "img_new")
+    private String imageNew;
+
     @Column(name = "short_description")
     private String shortDescription;
 
-    @OneToOne
     @JoinColumn(name = "author")
-    private UserEntity author;
+    private String author;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type_content")
+    private TypeContentEnum typeContent;
 
     @Column(name = "delete_flag")
     private Boolean deleteFlag;
 
+    public TypeContentEnum getTypeContent() {
+        return typeContent;
+    }
+
+    public void setTypeContent(TypeContentEnum typeContent) {
+        this.typeContent = typeContent;
+    }
 
     public String getTitle() {
         return title;
@@ -60,11 +74,11 @@ public class NewsEntity  extends baseEntity{
         this.shortDescription = shortDescription;
     }
 
-    public UserEntity getAuthor() {
+    public String getAuthor() {
         return author;
     }
 
-    public void setAuthor(UserEntity author) {
+    public void setAuthor(String author) {
         this.author = author;
     }
 
@@ -74,5 +88,13 @@ public class NewsEntity  extends baseEntity{
 
     public void setDeleteFlag(Boolean deleteFlag) {
         this.deleteFlag = deleteFlag;
+    }
+
+    public String getImageNew() {
+        return imageNew;
+    }
+
+    public void setImageNew(String imageNew) {
+        this.imageNew = imageNew;
     }
 }

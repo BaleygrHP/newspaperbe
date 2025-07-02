@@ -6,7 +6,7 @@ import com.hungpham.entity.CategoryEntity;
 import java.util.List;
 
 public interface CategoryService {
-    List<CategoryEntity> getAllCategories();
+    List<CategoryEntity> getAllCategories(String status);
     CategoryEntity getCategoryById(String id);
     CategoryEntity createCategory(CategoryDto categoryDto);
     CategoryEntity updateCategory(CategoryDto categoryDto);

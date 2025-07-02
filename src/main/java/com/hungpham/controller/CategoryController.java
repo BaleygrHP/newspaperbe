@@ -10,13 +10,15 @@ import java.util.List;
 
 @RestController
 @RequestMapping("category")
+// remove gấp sau khi config auth2.0
+@CrossOrigin(origins = "http://localhost:3000") // Allow frontend origin
 public class CategoryController {
     @Autowired
     private CategoryService categoryService;
 
     @GetMapping("/get-all-categories")
-    public List<CategoryEntity> getAllCategories() {
-        return categoryService.getAllCategories();
+    public List<CategoryEntity> getAllCategories(@RequestParam String status) {
+        return categoryService.getAllCategories(status);
     }
 
     @GetMapping("/get-by-id")
