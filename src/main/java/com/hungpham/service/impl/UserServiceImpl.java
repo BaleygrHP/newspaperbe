@@ -47,7 +47,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserEntity updateUser(UserDto userDtos) {
+    public UserDto updateUser(UserDto userDtos) {
         if (null == userDtos.getId()) {
             throw new BadRequestException("Not found user id to update");
         }
@@ -56,30 +56,30 @@ public class UserServiceImpl implements UserService {
         userDtos.setCreatedDate(userEntity.getCreatedDate().toString());
         userDtos.setUpdatedDate(new Date().toString());
         UserEntity finalUserEntity = userMapper.toEntity(userDtos);
-        return userRepository.save(finalUserEntity);
+        return userMapper.toDto(userRepository.save(finalUserEntity));
     }
 
     @Override
-    public UserEntity newUser(UserDto userDtos) {
+    public UserDto newUser(UserDto userDtos) {
         UUID uuid = UUID.randomUUID();
         userDtos.setId(String.valueOf(uuid));
         userDtos.setCreatedDate(new Date().toString());
         checkDuplicateUser(userDtos);
         logger.info("Add new user {}", userDtos);
         UserEntity userEntity = userMapper.toEntity(userDtos);
-        return userRepository.save(userEntity);
+        return userMapper.toDto(userRepository.save(userEntity));
     }
 
     @Override
-    public UserEntity softDeleteUser(String id) {
+    public UserDto softDeleteUser(String id) {
         logger.info("Delete user which id is {}", id);
         UserEntity userEntity = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found "));
         if (userEntity.isStatus()){
-            return userEntity;
+            return userMapper.toDto(userEntity);
         }
         userEntity.setStatus(false);
         userEntity.setUpdatedDate(new Date().toString());
-        return userRepository.save(userEntity);
+        return userMapper.toDto(userRepository.save(userEntity));
     }
 
     @Override

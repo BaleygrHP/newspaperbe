@@ -17,28 +17,28 @@ public class CategoryController {
     private CategoryService categoryService;
 
     @GetMapping("/get-all-categories")
-    public List<CategoryEntity> getAllCategories(@RequestParam String status) {
+    public List<CategoryDto> getAllCategories(@RequestParam String status) {
         return categoryService.getAllCategories(status);
     }
 
     @GetMapping("/get-by-id")
-    public CategoryEntity getCategoryById(@RequestParam String id) {
+    public CategoryDto getCategoryById(@RequestParam String id) {
         return categoryService.getCategoryById(id);
     }
 
 
     @PostMapping("/create-category")
-    public CategoryEntity createNewNews(@RequestBody CategoryDto categoryDto){
+    public CategoryDto createNewNews(@RequestBody CategoryDto categoryDto){
         return categoryService.createCategory(categoryDto);
     }
 
     @PutMapping("/update-category")
-    public CategoryEntity updateNews(@RequestBody CategoryDto categoryDto){
+    public CategoryDto updateNews(@RequestBody CategoryDto categoryDto){
         return categoryService.updateCategory(categoryDto);
     }
 
     @DeleteMapping
-    public CategoryEntity deleteCategory(@RequestParam String id){
+    public CategoryDto deleteCategory(@RequestParam String id){
         return categoryService.deleteCategory(id);
     }
 }

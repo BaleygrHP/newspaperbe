@@ -7,7 +7,7 @@ public class NewUpTopDto extends AbstractDto<NewsDto>{
     private String categoryName;
     private String shortDescription;
     private String author;
-    private String img_new;
+    private String imgNew;
 
     public String getTitle() {
         return title;
@@ -42,11 +42,11 @@ public class NewUpTopDto extends AbstractDto<NewsDto>{
     }
 
 
-    public String getImg_new() {
-        return img_new;
+    public String getImgNew() {
+        return imgNew;
     }
 
-    public void setImg_new(String img_new) {
-        this.img_new = img_new;
+    public void setImgNew(String imgNew) {
+        this.imgNew = imgNew;
     }
 }

@@ -16,17 +16,17 @@ public class UserController {
     @Autowired
     private UserService userService;
     @PostMapping("/new-user")
-    public UserEntity newUser(@RequestBody UserDto userDtos) {
+    public UserDto newUser(@RequestBody UserDto userDtos) {
         return userService.newUser(userDtos);
     }
 
     @PutMapping("/update-user")
-    public UserEntity updatetUser(@RequestBody UserDto userDtos) {
+    public UserDto updatetUser(@RequestBody UserDto userDtos) {
         return userService.updateUser(userDtos);
     }
 
     @DeleteMapping
-    public UserEntity softDeletedUser(@RequestBody String id) {
+    public UserDto softDeletedUser(@RequestBody String id) {
         return userService.softDeleteUser(id);
     }
 

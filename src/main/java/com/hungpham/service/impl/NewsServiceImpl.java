@@ -1,11 +1,13 @@
 package com.hungpham.service.impl;
 
 import com.hungpham.common.exception.BadRequestException;
+import com.hungpham.dtos.NewUpTopDto;
 import com.hungpham.dtos.NewsDto;
 import com.hungpham.entity.CategoryEntity;
 import com.hungpham.entity.NewUpTopEntity;
 import com.hungpham.entity.NewsEntity;
 import com.hungpham.entity.UserEntity;
+import com.hungpham.mappers.NewUpTopMapper;
 import com.hungpham.mappers.NewsMapper;
 import com.hungpham.repository.CategoriesRepository;
 import com.hungpham.repository.NewUpTopRepository;
@@ -37,14 +39,16 @@ public class NewsServiceImpl implements NewsService {
 
     @Autowired
     private NewsMapper newsMapper;
+
+    @Autowired
+    private NewUpTopMapper newUpTopMapper;
     @Override
     public List<NewsDto> getAllNews() {
         List<NewsEntity>  newsData = newsRepository.findAll();
         List<NewsDto> newsDataDtos = new ArrayList<>();
-        NewsDto newsDataDto = new NewsDto();
         for (NewsEntity news: newsData) {
             UserEntity userEntity = getUserEntity(news.getAuthor());
-            newsDataDto = newsMapper.toDto(news);
+            NewsDto newsDataDto = newsMapper.toDto(news);
             newsDataDto.setAuthor(userEntity.getNickName());
             newsDataDto.setCategoryName(news.getCategory().getCategoryName());
             newsDataDtos.add(newsDataDto);
@@ -53,65 +57,69 @@ public class NewsServiceImpl implements NewsService {
     }
 
     @Override
-    public NewsEntity getNewsById(String id) {
+    public NewsDto getNewsById(String id) {
         logger.info("Find new with id: {}", id);
-        return newsRepository.findById(id).orElseThrow(()-> new EntityNotFoundException("News not found " + id));
+        NewsEntity newsEntity =  newsRepository.findById(id).orElseThrow(()-> new EntityNotFoundException("News not found " + id));
+        return newsMapper.toDto(newsEntity);
+
     }
 
     @Override
-    public List<NewsEntity> getNewsByAuthor(String author) {
+    public List<NewsDto> getNewsByAuthor(String author) {
         logger.info("Find new with author: {}", author);
         List<NewsEntity> newsEntityList = newsRepository.getByAuthor(author);
         if (newsEntityList.isEmpty()){
             throw new BadRequestException("This author is not have any news");
         }
-        return newsEntityList;
+        List<NewsDto> newsDtoList = new ArrayList<>();
+        for (NewsEntity newsEntity:newsEntityList){
+            newsDtoList.add(newsMapper.toDto(newsEntity));
+        }
+        return newsDtoList;
     }
 
     @Override
-    public NewsEntity createNewNew(NewsDto newsDto) {
+    public NewsDto createNewNew(NewsDto newsDto) {
         UUID uuid = UUID.randomUUID();
         newsDto.setId(String.valueOf(uuid));
         newsDto.setCreatedDate(new Date().toString());
         logger.info("Create new with data: {}", newsDto);
-//        UserEntity userEntity = getUserEntity(newsDto.getAuthor());
         CategoryEntity categoryEntity = getCategoryEntity(newsDto.getCategoryName());
         NewsEntity newsEntity = newsMapper.toEntity(newsDto);
         newsEntity.setAuthor(newsDto.getAuthor());
         newsEntity.setCategory(categoryEntity);
         logger.info("Save news to db {}", newsEntity);
-        return newsRepository.save(newsEntity);
+        return newsMapper.toDto(newsRepository.save(newsEntity));
     }
 
     @Override
-    public NewsEntity updateNew(NewsDto newsDto) {
+    public NewsDto updateNew(NewsDto newsDto) {
         logger.info("Update new with data: {}", newsDto);
         if (null == newsDto.getId()) {
             throw new BadRequestException("Not found new id to update");
         }
         NewsEntity newsEntity = newsRepository.findById(newsDto.getId()).orElseThrow(
                 ()-> new EntityNotFoundException("News not found for update" + newsDto.getId()));
-        newsDto.setCreatedDate(newsEntity.getCreatedDate().toString());
+        newsDto.setCreatedDate(newsEntity.getCreatedDate());
         newsDto.setUpdatedDate(new Date().toString());
-//        UserEntity userEntity = getUserEntity(newsDto.getAuthor());
         CategoryEntity categoryEntity = getCategoryEntity(newsDto.getCategoryName());
         NewsEntity finalNewEntity = newsMapper.toEntity(newsDto);
         finalNewEntity.setAuthor(newsDto.getAuthor());
         finalNewEntity.setCategory(categoryEntity);
-        return newsRepository.save(finalNewEntity);
+        return newsMapper.toDto(newsRepository.save(finalNewEntity));
     }
 
     @Override
-    public NewsEntity deleteNew(String id) {
+    public NewsDto deleteNew(String id) {
         logger.info("Delete new with id: {}", id);
         NewsEntity newsEntity = newsRepository.findById(id).orElseThrow(
                 ()-> new EntityNotFoundException("News not found for delete" + id));
         if (newsEntity.getDeleteFlag()) {
-            return newsEntity;
+            return newsMapper.toDto(newsEntity);
         }
         newsEntity.setDeleteFlag(true);
         newsEntity.setUpdatedDate(new Date().toString());
-        return newsRepository.save(newsEntity);
+        return newsMapper.toDto(newsRepository.save(newsEntity));
     }
 
     private CategoryEntity getCategoryEntity(String categoryName) {
@@ -129,27 +137,34 @@ public class NewsServiceImpl implements NewsService {
     }
 
     @Override
-    public NewUpTopEntity getUpTopNew() {
+    public NewUpTopDto getUpTopNew() {
         logger.info("Get top new");
-        return newUpTopRepository.findAll().get(0);
+        NewUpTopEntity newUpTopEntity = newUpTopRepository.findAll().get(0);
+        UserEntity userEntity = getUserEntity(newUpTopEntity.getAuthor());
+        NewUpTopDto newUpTopDto = newUpTopMapper.toDto(newUpTopEntity);
+        newUpTopDto.setAuthor(userEntity.getNickName());
+        newUpTopDto.setCategoryName(newUpTopEntity.getCategory().getCategoryName());
+        return newUpTopDto;
     }
 
     @Override
-    public Map<String, NewsEntity> getBodyNew() {
+    public Map<String, NewsDto> getBodyNew() {
         logger.info("Get body new");
-        Map<String, NewsEntity> dataMap = new HashMap<>();
+        Map<String, NewsDto> dataMap = new HashMap<>();
         List<Object[]> dataBodyNews = newsRepository.getDataBodyNews();
         for (Object[] data: dataBodyNews) {
-            NewsEntity newsBody = new NewsEntity();
+            NewsDto newsBody = new NewsDto();
             newsBody.setId(data[0].toString());
             newsBody.setTitle(data[1].toString());
-            newsBody.setImageNew(data[2].toString());
+            newsBody.setImageNew(data[2] != null ? data[2].toString() : "");
             newsBody.setShortDescription(data[3].toString());
             newsBody.setAuthor(data[4].toString());
             newsBody.setCreatedDate(data[5].toString());
             newsBody.setUpdatedDate(data[6].toString());
-            dataMap.put(data[7].toString(), newsBody);
+            newsBody.setCategoryName(data[8].toString());
+
         }
+        dataMap.put(data[7].toString(), newsBody);
         return dataMap;
     }
 }

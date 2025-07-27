@@ -7,11 +7,11 @@ public class NewsDto extends AbstractDto<NewsDto> {
     private String categoryName;
     private String content;
     private String shortDescription;
+    private String imageNew;
     private String author;
     private Boolean deleteFlag;
     private TypeContentEnum typeContent;
 
-    private String img_new;
     public TypeContentEnum getTypeContent() {
         return typeContent;
     }
@@ -73,11 +73,11 @@ public class NewsDto extends AbstractDto<NewsDto> {
         this.author = author;
     }
 
-    public String getImg_new() {
-        return img_new;
+    public String getImageNew() {
+        return imageNew;
     }
 
-    public void setImg_new(String img_new) {
-        this.img_new = img_new;
+    public void setImageNew(String imageNew) {
+        this.imageNew = imageNew;
     }
 }

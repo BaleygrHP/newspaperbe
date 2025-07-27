@@ -12,7 +12,6 @@ public class NewUpTopEntity extends baseEntity{
 
     @Column(name = "title")
     private String title;
-
     @ManyToOne
     @JoinColumn(name = "category")
     private CategoryEntity category;
@@ -22,9 +21,8 @@ public class NewUpTopEntity extends baseEntity{
     @Column(name = "img_new")
     private String imageNew;
 
-    @OneToOne
     @JoinColumn(name = "author")
-    private UserEntity author;
+    private String author;
 
 
     public String getTitle() {
@@ -59,11 +57,11 @@ public class NewUpTopEntity extends baseEntity{
         this.imageNew = imageNew;
     }
 
-    public UserEntity getAuthor() {
+    public String getAuthor() {
         return author;
     }
 
-    public void setAuthor(UserEntity author) {
+    public void setAuthor(String author) {
         this.author = author;
     }
 

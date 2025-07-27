@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -29,33 +30,41 @@ public class CategoryServiceImpl implements CategoryService {
     private CategoryMapper categoryMapper;
 
     @Override
-    public List<CategoryEntity> getAllCategories(String status) {
+    public List<CategoryDto> getAllCategories(String status) {
         logger.info("Start get all category");
+        List<CategoryEntity> categoryEntityList;
+        List<CategoryDto> categoryDtoList = new ArrayList<>();
         if(status.equalsIgnoreCase("all")) {
-           return categoriesRepository.findAll();
+            categoryEntityList =  categoriesRepository.findAll();
+        } else {
+            categoryEntityList = categoriesRepository.findAllByDeleteFlag(Boolean.valueOf(status));
         }
-        return categoriesRepository.findAllByDeleteFlag(Boolean.valueOf(status));
+        for (CategoryEntity category : categoryEntityList) {
+            categoryDtoList.add(categoryMapper.toDto(category));
+        }
+        return categoryDtoList;
     }
 
     @Override
-    public CategoryEntity getCategoryById(String id) {
+    public CategoryDto getCategoryById(String id) {
         logger.info("Find category id {}", id);
-        return categoriesRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Category not found " + id));
+        CategoryEntity categoryEntity =  categoriesRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Category not found " + id));
+        return  categoryMapper.toDto(categoryEntity);
     }
 
     @Override
-    public CategoryEntity createCategory(CategoryDto categoryDto) {
+    public CategoryDto createCategory(CategoryDto categoryDto) {
         checkDuplicateCategory(categoryDto);
         UUID uuid = UUID.randomUUID();
         categoryDto.setId(String.valueOf(uuid));
         categoryDto.setCreatedDate(new Date().toString());
         logger.info("New category data {}", categoryDto);
         CategoryEntity categoryEntity = categoryMapper.toEntity(categoryDto);
-        return categoriesRepository.save(categoryEntity);
+        return  categoryMapper.toDto(categoriesRepository.save(categoryEntity));
     }
 
     @Override
-    public CategoryEntity updateCategory(CategoryDto categoryDto) {
+    public CategoryDto updateCategory(CategoryDto categoryDto) {
         logger.info("Update category id {}", categoryDto.getId());
         if (null == categoryDto.getId()) {
             throw new BadRequestException("Not found category id to update");
@@ -66,20 +75,20 @@ public class CategoryServiceImpl implements CategoryService {
         categoryDto.setCreatedDate(categoryEntity.getCreatedDate().toString());
         categoryDto.setUpdatedDate(new Date().toString());
         CategoryEntity finalNewEntity = categoryMapper.toEntity(categoryDto);
-        return categoriesRepository.save(finalNewEntity);
+        return categoryMapper.toDto(categoriesRepository.save(finalNewEntity));
     }
 
     @Override
-    public CategoryEntity deleteCategory(String id) {
+    public CategoryDto deleteCategory(String id) {
         logger.info("Delete category id {}", id);
         CategoryEntity categoryEntity = categoriesRepository.findById(id).orElseThrow(
                 ()-> new EntityNotFoundException("News not found " + id));
         if (categoryEntity.isDeleteFlag()){
-            return categoryEntity;
+            return  categoryMapper.toDto(categoryEntity);
         }
         categoryEntity.setDeleteFlag(true);
         categoryEntity.setUpdatedDate(new Date().toString());
-        return categoriesRepository.save(categoryEntity);
+        return  categoryMapper.toDto(categoriesRepository.save(categoryEntity));
     }
 
     private void checkDuplicateCategory(CategoryDto categoryDto){
