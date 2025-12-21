@@ -1,21 +1,21 @@
 package com.hungpham.dtos;
-import com.hungpham.common.enums.ErrorCode;
+import com.hungpham.common.enums.ErrorCodeEnum;
 
 public class ErrorMessageResponseDto {
-    private ErrorCode errorCode;
+    private ErrorCodeEnum errorCode;
     private String message;
     private long timestamp;
-    public ErrorMessageResponseDto(ErrorCode errorCode, String message) {
+    public ErrorMessageResponseDto(ErrorCodeEnum errorCode, String message) {
         this.errorCode = errorCode;
         this.message = message;
         this.timestamp = System.currentTimeMillis();
     }
 
-    public ErrorCode getErrorCode() {
+    public ErrorCodeEnum getErrorCode() {
         return errorCode;
     }
 
-    public void setErrorCode(ErrorCode errorCode) {
+    public void setErrorCode(ErrorCodeEnum errorCode) {
         this.errorCode = errorCode;
     }
 
