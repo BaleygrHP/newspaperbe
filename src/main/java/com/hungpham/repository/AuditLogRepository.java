@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AuditLogRepository extends JpaRepository<AuditLogEntity, Long> {
-    Page<AuditLogEntity> findByActor_IdOrderByCreatedAtDesc(
+    Page<AuditLogEntity> findByActor_IdOrderByCreatedDateDesc(
             byte[] actorId,
             Pageable pageable
     );

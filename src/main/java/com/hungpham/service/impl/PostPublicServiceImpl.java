@@ -43,15 +43,15 @@ public class PostPublicServiceImpl implements PostPublicService {
     //  FRONT PAGE
     @Override
     public FrontPageDto getFrontPage() {
-
+        LocalDateTime now = LocalDateTime.now();
         log.info("[FrontPage] Start loading front page");
         // 1) Featured (1 bài)
-        Optional<PostEntity> featuredOpt =
-                postRepository.findFirstByIsFeaturedTrueAndStatusAndDeletedAtIsNullOrderByPublishedAtDesc(
-                        PostStatusEnum.PUBLISHED
-                );
-        log.debug("[FrontPage] Featured found: {}", featuredOpt.isPresent());
-        PostDto featured = featuredOpt.isPresent() ? postMapper.toDto(featuredOpt.get()) : null;
+        PostDto featured = frontPageItemRepository.findActiveFeatured(now)
+                .stream()
+                .findFirst()
+                .map(item -> postMapper.toDto(item.getPost()))
+                .orElse(null);
+        log.debug("[FrontPage] Featured found: {}", featured);
 
         // 2) Latest (6 bài)
         Pageable latestPage = PageRequest.of(0, 6, Sort.by(Sort.Direction.DESC, "publishedAt"));
@@ -63,7 +63,7 @@ public class PostPublicServiceImpl implements PostPublicService {
 
         // 3) Curated (front_page_items) – optional
         List<PostDto> curated = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
+
         List<FrontPageItemEntity> curatedEntities = frontPageItemRepository.findActiveFrontPageItems(now);
         for (FrontPageItemEntity f : curatedEntities) {
             PostEntity p = f.getPost();

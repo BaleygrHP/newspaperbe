@@ -44,5 +44,5 @@ public class AuditLogEntity{
     private String userAgent;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private LocalDateTime createdDate;
 }

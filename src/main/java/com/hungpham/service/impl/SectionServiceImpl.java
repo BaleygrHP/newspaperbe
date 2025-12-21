@@ -40,7 +40,7 @@ public class SectionServiceImpl implements SectionService {
     public List<SectionDto> getPublicMenu() {
         log.info("[Section][PublicMenu] load");
         List<SectionEntity> entities =
-                sectionRepository.findByIsActiveTrueAndVisibilityOrderBySortOrderAsc(
+                sectionRepository.findByActiveTrueAndVisibilityOrderBySortOrderAsc(
                         SectionVisibilityEnum.PUBLIC
                 );
 
@@ -55,7 +55,7 @@ public class SectionServiceImpl implements SectionService {
     @Transactional(readOnly = true)
     public List<SectionDto> getAllActive() {
         log.info("[Section][AllActive] load");
-        List<SectionEntity> entities = sectionRepository.findByIsActiveTrueOrderBySortOrderAsc();
+        List<SectionEntity> entities = sectionRepository.findByActiveTrueOrderBySortOrderAsc();
 
         List<SectionDto> dtos = new ArrayList<>();
         for (SectionEntity e : entities) dtos.add(sectionMapper.toDto(e));
@@ -72,7 +72,7 @@ public class SectionServiceImpl implements SectionService {
         }
         log.info("[Section][GetByKey] key={}", key);
 
-        SectionEntity entity = sectionRepository.findByKeyAndIsActiveTrue(key.trim())
+        SectionEntity entity = sectionRepository.findByKeyAndActiveTrue(key.trim())
                 .orElseThrow(() -> new EntityNotFoundException("Section not found: " + key));
 
         return sectionMapper.toDto(entity);

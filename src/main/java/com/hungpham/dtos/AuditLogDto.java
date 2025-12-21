@@ -12,7 +12,6 @@ public class AuditLogDto extends AbstractDto<AuditLogDto>{
     private AuditActionEnum action;
     private AuditEntityTypeEnum entityType;
     private String entityId;
-
     private String meta;
     private String ipAddress;
     private String userAgent;

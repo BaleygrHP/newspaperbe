@@ -37,9 +37,6 @@ public interface PostRepository extends JpaRepository<PostEntity, byte[]> {
             PostStatusEnum status,
             Pageable pageable
     );
-    Optional<PostEntity> findFirstByIsFeaturedTrueAndStatusAndDeletedAtIsNullOrderByPublishedAtDesc(
-            PostStatusEnum status
-    );
 
     // Bài liên quan (Related)
     @Query("select p from PostEntity p " +

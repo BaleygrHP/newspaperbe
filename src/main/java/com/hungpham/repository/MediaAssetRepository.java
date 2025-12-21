@@ -10,6 +10,6 @@ import java.util.List;
 public interface MediaAssetRepository extends JpaRepository<MediaAssetEntity, byte[]> {
     boolean existsByFileHash(String fileHash);
 
-    List<MediaAssetEntity> findByOwner_IdOrderByCreatedAtDesc(byte[] ownerId);
+    List<MediaAssetEntity> findByOwner_IdOrderByCreatedDateDesc(byte[] ownerId);
 
 }

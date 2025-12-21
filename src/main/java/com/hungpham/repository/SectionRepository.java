@@ -10,15 +10,17 @@ import java.util.Optional;
 public interface SectionRepository extends JpaRepository<SectionEntity, byte[]> {
 
     // Public: lấy section theo key (editorial / notes / diary)
-    Optional<SectionEntity> findByKeyAndIsActiveTrue(String key);
+    Optional<SectionEntity> findByKeyAndActiveTrue(String key);
     // Public menu
-    List<SectionEntity> findByIsActiveTrueAndVisibilityOrderBySortOrderAsc(
+    List<SectionEntity> findByActiveTrueAndVisibilityOrderBySortOrderAsc(
             SectionVisibilityEnum visibility
     );
     // Admin: check duplicate key
     boolean existsByKey(String key);
-    List<SectionEntity> findByIsActiveTrueOrderBySortOrderAsc();
+    List<SectionEntity> findByActiveTrueOrderBySortOrderAsc();
     Optional<SectionEntity> findById(byte[] id);
 
     List<SectionEntity> findAllByOrderBySortOrderAsc();
+
+    Optional<SectionEntity> findByKey(String key);
 }

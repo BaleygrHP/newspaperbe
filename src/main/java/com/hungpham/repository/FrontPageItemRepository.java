@@ -43,12 +43,15 @@ public interface FrontPageItemRepository extends JpaRepository<FrontPageItemEnti
     /**
      * Lấy items đang active + nằm trong time window
      */
-    @Query("select f from FrontPageItemEntity f " +
+
+    @Query("select f " +
+            "from FrontPageItemEntity f " +
             "where f.active = true " +
+            "and f.pinned = true " +
             "and (f.startAt is null or f.startAt <= :now) " +
             "and (f.endAt is null or f.endAt >= :now) " +
-            "order by f.pinned desc, f.position asc")
-    List<FrontPageItemEntity> findActiveForNow(@Param("now") LocalDateTime now);
+            "order by f.position asc")
+    List<FrontPageItemEntity> findActiveFeatured(@Param("now") LocalDateTime now);
 
 
     // Lấy list items đang active + trong time window (dùng cho homepage)

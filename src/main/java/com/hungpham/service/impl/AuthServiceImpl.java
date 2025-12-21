@@ -47,7 +47,7 @@ public class AuthServiceImpl implements AuthService {
         String email = req.getEmail().trim().toLowerCase();
         log.info("[Auth][Login] email={}", email);
 
-        UserEntity user = userRepository.findByEmailAndIsActiveTrue(email)
+        UserEntity user = userRepository.findByEmailAndActiveTrue(email)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         // giả định UserEntity có field passwordHash
