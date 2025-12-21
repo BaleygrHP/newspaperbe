@@ -1,6 +1,6 @@
 package com.hungpham.common.exception;
 
-import com.hungpham.common.enums.ErrorCode;
+import com.hungpham.common.enums.ErrorCodeEnum;
 import com.hungpham.dtos.ErrorMessageResponseDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +16,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorMessageResponseDto> handleBadRequestException(BadRequestException ex) {
         logger.debug("BadRequestException", ex);
-        ErrorMessageResponseDto errorResponseDto = new ErrorMessageResponseDto(ErrorCode.BAD_REQUEST, ex.getMessage());
+        ErrorMessageResponseDto errorResponseDto = new ErrorMessageResponseDto(ErrorCodeEnum.BAD_REQUEST, ex.getMessage());
         return new ResponseEntity<>(errorResponseDto, HttpStatus.BAD_REQUEST);
     }
 
@@ -24,14 +24,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ErrorMessageResponseDto> handleEntityNotFoundException(EntityNotFoundException ex) {
         logger.error("EntityNotFoundException", ex);
-        ErrorMessageResponseDto errorResponseDto = new ErrorMessageResponseDto(ErrorCode.ENTITY_NOT_FOUND, ex.getMessage());
+        ErrorMessageResponseDto errorResponseDto = new ErrorMessageResponseDto(ErrorCodeEnum.ENTITY_NOT_FOUND, ex.getMessage());
         return new ResponseEntity<>(errorResponseDto, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorMessageResponseDto> handleResourceNotFoundException(ResourceNotFoundException ex) {
         logger.error("ResourceNotFoundException", ex);
-        ErrorMessageResponseDto errorResponseDto = new ErrorMessageResponseDto(ErrorCode.UNPROCESSABLE_ENTITY, ex.getMessage());
+        ErrorMessageResponseDto errorResponseDto = new ErrorMessageResponseDto(ErrorCodeEnum.UNPROCESSABLE_ENTITY, ex.getMessage());
         return new ResponseEntity<>(errorResponseDto, HttpStatus.UNPROCESSABLE_ENTITY);
     }
 }

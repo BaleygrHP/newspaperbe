@@ -1,57 +1,43 @@
 package com.hungpham.entity;
 
-import com.hungpham.common.enums.RoleEnum;
+import com.hungpham.common.enums.UserRoleEnum;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
-
+@Getter
+@Setter
 @Entity
-@Table(name = "user")
-public class UserEntity extends baseEntity{
-    @Column(name = "user_name")
-    private String userName;
+@Table(name = "users")
+public class UserEntity extends BaseUuidEntity {
 
-    @Column(name = "password")
-    private String password;
+    @Column(name = "email", nullable = false, length = 255, unique = true)
+    private String email;
 
-    @Column(name = "role")
-    @Enumerated(value = EnumType.STRING)
-    private RoleEnum role;
+    @Column(name = "password_hash", nullable = false, length = 255)
+    private String passwordHash;
 
-    @Column(name = "status")
-    private boolean status;
+    @Column(name = "display_name", nullable = false, length = 120)
+    private String displayName;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 20)
+    private UserRoleEnum role;
 
-    public String getUserName() {
-        return userName;
-    }
+    @Column(name = "is_active", nullable = false)
+    private boolean active;
 
-    public void setUserName(String userName) {
-        this.userName = userName;
-    }
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
 
-    public String getPassword() {
-        return password;
-    }
+    @Column(name = "password_changed_at")
+    private LocalDateTime passwordChangedAt;
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    @Column(name = "failed_login_count", nullable = false)
+    private int failedLoginCount;
 
-    public RoleEnum getRole() {
-        return role;
-    }
-
-    public void setRole(RoleEnum role) {
-        this.role = role;
-    }
-
-
-    public boolean isStatus() {
-        return status;
-    }
-
-    public void setStatus(boolean status) {
-        this.status = status;
-    }
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
 }
