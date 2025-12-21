@@ -1,5 +1,6 @@
 package com.hungpham.service;
 
+import com.hungpham.dtos.FrontPageItemDto;
 import com.hungpham.entity.FrontPageItemEntity;
 import com.hungpham.requests.UpdateFrontPageItemRequest;
 
@@ -8,21 +9,21 @@ import java.util.List;
 
 public interface FrontPageService {
 
-    FrontPageItemEntity setFeatured(String postId, String actorUserId);
+    FrontPageItemDto setFeatured(String postId, String actorUserId);
 
-    FrontPageItemEntity upsertCurated(String postId,
-                                      int position,
-                                      boolean active,
-                                      LocalDateTime startAt,
-                                      LocalDateTime endAt,
-                                      String note,
-                                      String actorUserId);
+    FrontPageItemDto upsertCurated(String postId,
+                                   int position,
+                                   boolean active,
+                                   LocalDateTime startAt,
+                                   LocalDateTime endAt,
+                                   String note,
+                                   String actorUserId);
 
     List<FrontPageItemEntity> getActiveItemsForNow();
     // ===== Admin functions (thiếu) =====
-    List<FrontPageItemEntity> getAllItemsForAdmin();
+    List<FrontPageItemDto> getAllItemsForAdmin();
 
-    FrontPageItemEntity updateItem(Long id, UpdateFrontPageItemRequest req, String actorUserId);
+    FrontPageItemDto updateItem(Long id, UpdateFrontPageItemRequest req, String actorUserId);
 
     void deleteItem(Long id, String actorUserId);
 

@@ -4,6 +4,7 @@ import com.hungpham.common.enums.AuditActionEnum;
 import com.hungpham.common.enums.AuditEntityTypeEnum;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -13,7 +14,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "audit_logs")
 public class AuditLogEntity{
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
@@ -44,5 +44,6 @@ public class AuditLogEntity{
     private String userAgent;
 
     @Column(name = "created_at")
+    @CreationTimestamp
     private LocalDateTime createdDate;
 }

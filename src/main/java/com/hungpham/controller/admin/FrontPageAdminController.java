@@ -1,6 +1,6 @@
 package com.hungpham.controller.admin;
 
-import com.hungpham.entity.FrontPageItemEntity;
+import com.hungpham.dtos.FrontPageItemDto;
 import com.hungpham.requests.ReorderFrontPageItemsRequest;
 import com.hungpham.requests.UpdateFrontPageItemRequest;
 import com.hungpham.requests.UpsertCuratedRequest;
@@ -23,15 +23,15 @@ public class FrontPageAdminController {
 
     // Set featured: pinned=true (chỉ 1)
     @PostMapping("/featured")
-    public FrontPageItemEntity setFeatured(@RequestParam("postId") String postId,
-                                           @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
+    public FrontPageItemDto setFeatured(@RequestParam("postId") String postId,
+                                        @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
         return frontPageService.setFeatured(postId, actor(actorUserId));
     }
 
     // Upsert curated: pinned=false + position + active + time window
     @PostMapping("/curated")
-    public FrontPageItemEntity upsertCurated(@RequestBody UpsertCuratedRequest req,
-                                             @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
+    public FrontPageItemDto upsertCurated(@RequestBody UpsertCuratedRequest req,
+                                          @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
         return frontPageService.upsertCurated(
                 req.getPostId(),
                 req.getPosition(),
@@ -45,15 +45,15 @@ public class FrontPageAdminController {
 
     // ===== Admin load items =====
     @GetMapping("/items")
-    public List<FrontPageItemEntity> listItems() {
+    public List<FrontPageItemDto> listItems() {
         return frontPageService.getAllItemsForAdmin();
     }
 
 
     @PatchMapping("/items/{id}")
-    public FrontPageItemEntity updateItem(@PathVariable Long id,
-                                          @RequestBody UpdateFrontPageItemRequest req,
-                                          @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
+    public FrontPageItemDto updateItem(@PathVariable Long id,
+                                       @RequestBody UpdateFrontPageItemRequest req,
+                                       @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
         return frontPageService.updateItem(id, req, actor(actorUserId));
     }
 

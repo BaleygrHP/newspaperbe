@@ -2,8 +2,10 @@ package com.hungpham.service.impl;
 
 import com.hungpham.common.exception.BadRequestException;
 import com.hungpham.common.exception.EntityNotFoundException;
+import com.hungpham.dtos.FrontPageItemDto;
 import com.hungpham.entity.FrontPageItemEntity;
 import com.hungpham.entity.PostEntity;
+import com.hungpham.mappers.FrontPageItemMapper;
 import com.hungpham.repository.FrontPageItemRepository;
 import com.hungpham.repository.PostRepository;
 import com.hungpham.requests.UpdateFrontPageItemRequest;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.hungpham.mappers.UuidBinaryMapper;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -30,9 +33,12 @@ public class FrontPageServiceImpl implements FrontPageService {
     @Autowired
     private UuidBinaryMapper uuidBinaryMapper;
 
+    @Autowired
+    private FrontPageItemMapper frontPageItemMapper;
+
     @Override
     @Transactional
-    public FrontPageItemEntity setFeatured(String postId, String actorUserId) {
+    public FrontPageItemDto setFeatured(String postId, String actorUserId) {
         log.info("[FrontPage][SetFeatured] postId={}, actorUserId={}", postId, actorUserId);
 
         if (postId == null || postId.trim().isEmpty()) {
@@ -63,18 +69,19 @@ public class FrontPageServiceImpl implements FrontPageService {
 
         FrontPageItemEntity saved = frontPageItemRepository.save(item);
         log.info("[FrontPage][SetFeatured] done itemId={}", saved.getId());
-        return saved;
+
+        return frontPageItemMapper.toDto(saved);
     }
 
     @Override
     @Transactional
-    public FrontPageItemEntity upsertCurated(String postId,
-                                             int position,
-                                             boolean active,
-                                             LocalDateTime startAt,
-                                             LocalDateTime endAt,
-                                             String note,
-                                             String actorUserId) {
+    public FrontPageItemDto upsertCurated(String postId,
+                                          int position,
+                                          boolean active,
+                                          LocalDateTime startAt,
+                                          LocalDateTime endAt,
+                                          String note,
+                                          String actorUserId) {
         log.info("[FrontPage][UpsertCurated] postId={}, pos={}, active={}, actorUserId={}",
                 postId, position, active, actorUserId);
 
@@ -110,7 +117,7 @@ public class FrontPageServiceImpl implements FrontPageService {
 
         FrontPageItemEntity saved = frontPageItemRepository.save(item);
         log.debug("[FrontPage][UpsertCurated] done itemId={}", saved.getId());
-        return saved;
+        return frontPageItemMapper.toDto(saved);
     }
 
     @Override
@@ -125,14 +132,19 @@ public class FrontPageServiceImpl implements FrontPageService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<FrontPageItemEntity> getAllItemsForAdmin() {
+    public List<FrontPageItemDto> getAllItemsForAdmin() {
         log.info("[FrontPage][AdminList]");
-        return frontPageItemRepository.findAllOrderByPinnedDescPositionAsc();
+        List<FrontPageItemEntity> item = frontPageItemRepository.findAllOrderByPinnedDescPositionAsc();
+        List<FrontPageItemDto> itemDtos = new ArrayList<>();
+        for (FrontPageItemEntity itemEntity: item) {
+            itemDtos.add(frontPageItemMapper.toDto(itemEntity));
+        }
+        return itemDtos;
     }
 
     @Override
     @Transactional
-    public FrontPageItemEntity updateItem(Long id, UpdateFrontPageItemRequest req, String actorUserId) {
+    public FrontPageItemDto updateItem(Long id, UpdateFrontPageItemRequest req, String actorUserId) {
         log.info("[FrontPage][UpdateItem] id={}, actor={}", id, actorUserId);
 
         if (id == null) throw new BadRequestException("id is required");
@@ -163,7 +175,9 @@ public class FrontPageServiceImpl implements FrontPageService {
         if (req.getNote() != null) item.setNote(req.getNote());
 
         item.setUpdatedAt(LocalDateTime.now());
-        return frontPageItemRepository.save(item);
+        FrontPageItemEntity itemEntity = frontPageItemRepository.save(item);
+
+        return frontPageItemMapper.toDto(itemEntity);
     }
 
     @Override
@@ -175,7 +189,8 @@ public class FrontPageServiceImpl implements FrontPageService {
         FrontPageItemEntity item = frontPageItemRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("FrontPageItem not found: " + id));
 
-        frontPageItemRepository.delete(item);
+        item.setActive(false);
+        frontPageItemRepository.save(item);
     }
 
     @Override

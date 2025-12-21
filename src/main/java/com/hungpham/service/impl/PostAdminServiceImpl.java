@@ -87,7 +87,9 @@ public class PostAdminServiceImpl implements PostAdminService {
         post.setContentMd(req.getContentMd());
         post.setContentHtml(req.getContentHtml());
         post.setContentText(req.getContentText());
-
+        post.setCreatedDate(LocalDateTime.now());
+        post.setUpdatedDate(LocalDateTime.now());
+        log.info("[AdminPost][CreateDraft] created postId={}, {}", post.getCreatedDate(), post.getUpdatedDate());
         PostEntity saved = postRepository.save(post);
 
         insertRevision(saved, actor, "CREATE_DRAFT");
@@ -165,7 +167,7 @@ public class PostAdminServiceImpl implements PostAdminService {
         log.info("[AdminPost][Search] status={}, sectionId={}, q={}, page={}, size={}",
                 status, sectionId, q, page, size);
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedDate"));
 
         byte[] sid = null;
         if (!isEmpty(sectionId)) sid = uuidBinaryMapper.toBytes(sectionId);
@@ -307,6 +309,7 @@ public class PostAdminServiceImpl implements PostAdminService {
     // Helpers
     // =========================
     private UserEntity mustGetUser(String userId) {
+        log.info("[Get User] userId={}", userId);
         if (isEmpty(userId)) throw new BadRequestException("actorUserId is required");
         byte[] uid = uuidBinaryMapper.toBytes(userId);
         return userRepository.findById(uid)
@@ -314,20 +317,22 @@ public class PostAdminServiceImpl implements PostAdminService {
     }
 
     private SectionEntity mustGetSection(String sectionId) {
+        log.info("[Get Section] sectionId={}", sectionId);
         byte[] sid = uuidBinaryMapper.toBytes(sectionId);
         return sectionRepository.findById(sid)
                 .orElseThrow(() -> new EntityNotFoundException("Section not found: " + sectionId));
     }
 
     private PostEntity mustGetPost(String postId) {
+        log.info("[Get Post] postId={}", postId);
         byte[] pid = uuidBinaryMapper.toBytes(postId);
         return postRepository.findById(pid)
                 .orElseThrow(() -> new EntityNotFoundException("Post not found: " + postId));
     }
-
+    // Sau nay sẽ sử dụng kafka để handle
     private void insertRevision(PostEntity post, UserEntity editor, String reason) {
+        log.info("[Start dump revision]");
         int max = postRevisionRepository.getMaxRevisionNo(post.getId());
-
         PostRevisionEntity rev = new PostRevisionEntity();
         rev.setId(uuidBinaryMapper.newUuidBytes());
         rev.setPost(post);
@@ -345,6 +350,8 @@ public class PostAdminServiceImpl implements PostAdminService {
         rev.setContentHtml(post.getContentHtml());
         rev.setContentText(post.getContentText());
         rev.setContentVersion(post.getContentVersion());
+        rev.setCreatedDate(LocalDateTime.now());
+        rev.setUpdatedDate(LocalDateTime.now());
 
         postRevisionRepository.save(rev);
         log.debug("[AdminPost][Revision] postId={}, revisionNo={}, reason={}",
@@ -356,14 +363,17 @@ public class PostAdminServiceImpl implements PostAdminService {
                              AuditEntityTypeEnum entityType,
                              byte[] entityId,
                              String metaJson) {
+        log.info("[AdminPost][Start dump Audit user]");
         AuditLogEntity logEntity = new AuditLogEntity();
         logEntity.setActor(actor);
         logEntity.setAction(action);
         logEntity.setEntityType(entityType);
         logEntity.setEntityId(entityId);
+        logEntity.setCreatedDate(LocalDateTime.now());
         // metaJson: tuỳ mapping meta là JSON object hay String
-        // logEntity.setMeta(metaJson);
-
+//        logEntity.setMeta(metaJson);
+        log.debug("[AdminPost][Audit] actor={}, action={}, entityType={}, entityId={}",
+                uuidBinaryMapper.toUuid(actor.getId()), action, entityType, uuidBinaryMapper.toUuid(entityId));
         auditLogRepository.save(logEntity);
     }
 

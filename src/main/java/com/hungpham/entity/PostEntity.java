@@ -3,6 +3,7 @@ package com.hungpham.entity;
 import com.hungpham.common.enums.PostStatusEnum;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -62,6 +63,7 @@ public class PostEntity extends BaseUuidEntity{
     private String coverAlt;
 
     @Column(name = "published_at")
+    @CreationTimestamp
     private LocalDateTime publishedAt;
 
     @Column(name = "deleted_at")

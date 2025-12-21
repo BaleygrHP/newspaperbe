@@ -14,5 +14,5 @@ public class FrontPageItemDto extends AbstractDto<FrontPageItemDto>{
     private String startAt;
     private String endAt;
     private String note;
-
+    private PostPreviewDto post;
 }
