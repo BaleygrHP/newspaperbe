@@ -47,6 +47,18 @@ public class MediaAssetEntity extends BaseUuidEntity{
     @Column(name = "title", length = 300)
     private String title;
 
+    @Column(length = 255)
+    private String caption;
+
+    @Column(length = 120)
+    private String location;
+
+    @Column(name = "taken_at")
+    private LocalDateTime takenAt;
+
+    @Column(length = 64)
+    private String category;
+
     @Column(name = "file_hash", length = 64)
     private String fileHash;
 
