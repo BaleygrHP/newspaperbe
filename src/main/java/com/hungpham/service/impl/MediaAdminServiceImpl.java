@@ -88,7 +88,7 @@ public class MediaAdminServiceImpl implements MediaAdminService {
         e.setCategory(req.getCategory());
 
         if (!isEmpty(req.getTakenAt())) {
-            e.setTakenAt(LocalDate.parse(req.getTakenAt())); // yyyy-MM-dd
+            e.setTakenAt(LocalDate.parse(req.getTakenAt()).atStartOfDay()); // yyyy-MM-dd -> LocalDateTime
         }
 
         e.setFileHash(req.getFileHash());
@@ -118,7 +118,7 @@ public class MediaAdminServiceImpl implements MediaAdminService {
             if (isEmpty(req.getTakenAt())) {
                 e.setTakenAt(null);
             } else {
-                e.setTakenAt(LocalDate.parse(req.getTakenAt())); // yyyy-MM-dd
+                e.setTakenAt(LocalDate.parse(req.getTakenAt()).atStartOfDay()); // yyyy-MM-dd -> LocalDateTime
             }
         }
 
