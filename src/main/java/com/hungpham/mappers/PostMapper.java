@@ -9,6 +9,7 @@ public interface PostMapper {
     @Mappings({
             @Mapping(target = "id", source = "id", qualifiedByName = "toUuid"),
             @Mapping(target = "publishedAt", source = "publishedAt", qualifiedByName = "ldtToString"),
+            @Mapping(target = "content", source = "entity", qualifiedByName = "contentForDto"),
             // Entity.section (enum) -> Dto.section (string)
             @Mapping(target = "section", source = "section", qualifiedByName = "fromSectionEnum")
     })
@@ -31,4 +32,12 @@ public interface PostMapper {
             @Mapping(target = "section", source = "section", qualifiedByName = "toSectionEnum")
     })
     void updateEntityFromDto(PostDto dto, @MappingTarget PostEntity entity);
+
+    @Named("contentForDto")
+    default String contentForDto(PostEntity entity) {
+        if (entity == null) return null;
+        String md = entity.getContentMd();
+        if (md != null && !md.isEmpty()) return md;
+        return entity.getContentJson();
+    }
 }

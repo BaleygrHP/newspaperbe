@@ -15,7 +15,6 @@ import com.hungpham.repository.UserRepository;
 import com.hungpham.requests.media.CreateMediaByUrlRequest;
 import com.hungpham.requests.media.UpdateMediaRequest;
 import com.hungpham.service.MediaAdminService;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -25,7 +24,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Slf4j
 @Service
 public class MediaAdminServiceImpl implements MediaAdminService {
 

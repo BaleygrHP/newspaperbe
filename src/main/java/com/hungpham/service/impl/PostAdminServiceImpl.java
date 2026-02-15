@@ -1,5 +1,7 @@
 package com.hungpham.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hungpham.common.enums.AuditActionEnum;
 import com.hungpham.common.enums.AuditEntityTypeEnum;
 import com.hungpham.common.enums.PostStatusEnum;
@@ -24,12 +26,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PostAdminServiceImpl implements PostAdminService {
 
     private static final Logger log = LoggerFactory.getLogger(PostAdminServiceImpl.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Autowired
     private PostRepository postRepository;
@@ -62,17 +67,18 @@ public class PostAdminServiceImpl implements PostAdminService {
             throw new BadRequestException("Body is required");
         if (isEmpty(req.getTitle()))
             throw new BadRequestException("Title is required");
-        if (isEmpty(req.getSectionId()))
+        if (isEmpty(req.getSectionId()) && isEmpty(req.getSection()))
             throw new BadRequestException("Section is required");
-        if (req.getContentJson() == null)
-            throw new BadRequestException("contentJson is required");
+        if (req.getContentJson() == null && req.getContent() == null)
+            throw new BadRequestException("content is required");
 
         UserEntity actor = mustGetUser(actorUserId);
 
         SectionEntity section;
         if (!isEmpty(req.getSection())) {
-            section = sectionRepository.findByKey(req.getSection())
-                    .orElseThrow(() -> new EntityNotFoundException("Section not found: " + req.getSection()));
+            String sectionKey = req.getSection().trim().toLowerCase();
+            section = sectionRepository.findByKey(sectionKey)
+                    .orElseThrow(() -> new EntityNotFoundException("Section not found: " + sectionKey));
         } else {
             section = mustGetSection(req.getSectionId());
         }
@@ -95,17 +101,14 @@ public class PostAdminServiceImpl implements PostAdminService {
 
         post.setStatus(PostStatusEnum.DRAFT);
 
-        // content
-        // content
-        String content = req.getContentJson();
-        if (content == null)
-            content = req.getContent(); // fallback
-
-        if (content == null)
-            throw new BadRequestException("content is required");
-
-        post.setContentJson(content);
-        post.setContentMd(req.getContentMd());
+        String normalizedContentJson = resolveContentJson(req.getContentJson(), req.getContent());
+        post.setContentJson(normalizedContentJson);
+        if (!isEmpty(req.getContentMd())) {
+            post.setContentMd(req.getContentMd());
+        } else if (!isEmpty(req.getContent())) {
+            // Keep markdown/text editor content in a readable field for FE round-trip.
+            post.setContentMd(req.getContent());
+        }
         post.setContentHtml(req.getContentHtml());
         post.setContentText(req.getContentText());
         post.setCreatedDate(LocalDateTime.now());
@@ -150,8 +153,9 @@ public class PostAdminServiceImpl implements PostAdminService {
             post.setCoverImageUrl(req.getCoverImageUrl());
 
         if (!isEmpty(req.getSection())) {
-            SectionEntity section = sectionRepository.findByKey(req.getSection())
-                    .orElseThrow(() -> new EntityNotFoundException("Section not found: " + req.getSection()));
+            String sectionKey = req.getSection().trim().toLowerCase();
+            SectionEntity section = sectionRepository.findByKey(sectionKey)
+                    .orElseThrow(() -> new EntityNotFoundException("Section not found: " + sectionKey));
             post.setSection(section);
         } else if (!isEmpty(req.getSectionId())) {
             SectionEntity section = mustGetSection(req.getSectionId());
@@ -165,13 +169,15 @@ public class PostAdminServiceImpl implements PostAdminService {
             }
         }
 
-        if (req.getContentJson() != null)
-            post.setContentJson(req.getContentJson());
-        else if (req.getContent() != null)
-            post.setContentJson(req.getContent());
+        if (req.getContentJson() != null || req.getContent() != null) {
+            String normalizedContentJson = resolveContentJson(req.getContentJson(), req.getContent());
+            post.setContentJson(normalizedContentJson);
+        }
 
         if (req.getContentMd() != null)
             post.setContentMd(req.getContentMd());
+        else if (req.getContent() != null)
+            post.setContentMd(req.getContent());
         if (req.getContentHtml() != null)
             post.setContentHtml(req.getContentHtml());
         if (req.getContentText() != null)
@@ -462,6 +468,35 @@ public class PostAdminServiceImpl implements PostAdminService {
 
     private boolean isEmpty(String s) {
         return s == null || s.trim().isEmpty();
+    }
+
+    private String resolveContentJson(String contentJson, String content) {
+        if (!isEmpty(contentJson)) {
+            String normalized = contentJson.trim();
+            ensureValidJson(normalized, "contentJson");
+            return normalized;
+        }
+
+        if (!isEmpty(content)) {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("raw", content);
+            payload.put("type", "text");
+            try {
+                return OBJECT_MAPPER.writeValueAsString(payload);
+            } catch (JsonProcessingException e) {
+                throw new BadRequestException("content is invalid");
+            }
+        }
+
+        throw new BadRequestException("content is required");
+    }
+
+    private void ensureValidJson(String json, String fieldName) {
+        try {
+            OBJECT_MAPPER.readTree(json);
+        } catch (Exception e) {
+            throw new BadRequestException(fieldName + " must be valid JSON");
+        }
     }
 
     private String normalizeQuery(String q) {

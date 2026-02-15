@@ -3,7 +3,6 @@ package com.hungpham.mappers;
 import com.hungpham.common.enums.SectionEnum;
 import com.hungpham.common.exception.EntityNotFoundException;
 import com.hungpham.entity.SectionEntity;
-import com.hungpham.entity.UserEntity;
 import com.hungpham.repository.SectionRepository;
 import org.mapstruct.Named;
 import org.springframework.beans.factory.annotation.Autowired;
