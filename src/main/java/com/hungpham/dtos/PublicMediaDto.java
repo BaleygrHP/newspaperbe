@@ -9,10 +9,13 @@ import lombok.Setter;
 public class PublicMediaDto extends AbstractDto<PublicMediaDto> {
     private MediaKindEnum kind;
     private String url;
+    private String mimeType;
+    private Long byteSize;
     private Integer width;
     private Integer height;
     private String alt;
     private String title;
+    private String originalFileName;
     private boolean active;
     private String caption;
     private String location;

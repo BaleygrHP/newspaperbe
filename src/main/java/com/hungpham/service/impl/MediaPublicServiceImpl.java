@@ -3,11 +3,13 @@ package com.hungpham.service.impl;
 import com.hungpham.common.enums.MediaKindEnum;
 import com.hungpham.common.exception.BadRequestException;
 import com.hungpham.common.exception.EntityNotFoundException;
+import com.hungpham.dtos.MediaBinaryDto;
 import com.hungpham.dtos.PublicMediaDto;
 import com.hungpham.entity.MediaAssetEntity;
 import com.hungpham.mappers.PublicMediaMapper;
 import com.hungpham.mappers.UuidBinaryMapper;
 import com.hungpham.repository.MediaAssetRepository;
+import com.hungpham.service.MediaAdminService;
 import com.hungpham.service.MediaPublicService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
@@ -19,6 +21,7 @@ public class MediaPublicServiceImpl implements MediaPublicService {
     @Autowired private MediaAssetRepository mediaAssetRepository;
     @Autowired private PublicMediaMapper publicMediaMapper;
     @Autowired private UuidBinaryMapper uuidBinaryMapper;
+    @Autowired private MediaAdminService mediaAdminService;
 
     @Override
     public Page<PublicMediaDto> getGallery(MediaKindEnum kind, int page, int size) {
@@ -36,6 +39,17 @@ public class MediaPublicServiceImpl implements MediaPublicService {
 
     @Override
     public PublicMediaDto getActiveById(String id) {
+        MediaAssetEntity entity = mustGetActiveMedia(id);
+        return publicMediaMapper.toDto(entity);
+    }
+
+    @Override
+    public MediaBinaryDto loadActiveBinary(String id) {
+        mustGetActiveMedia(id);
+        return mediaAdminService.loadBinaryForAdmin(id);
+    }
+
+    private MediaAssetEntity mustGetActiveMedia(String id) {
         if (id == null || id.trim().isEmpty()) throw new BadRequestException("id is required");
 
         byte[] binId = uuidBinaryMapper.toBytes(id);
@@ -45,7 +59,6 @@ public class MediaPublicServiceImpl implements MediaPublicService {
                 .orElseThrow(() -> new EntityNotFoundException("Media not found: " + id));
 
         if (!entity.isActive()) throw new EntityNotFoundException("Media not found: " + id);
-
-        return publicMediaMapper.toDto(entity);
+        return entity;
     }
 }
