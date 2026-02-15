@@ -58,13 +58,24 @@ public class PostAdminServiceImpl implements PostAdminService {
     public PostDto createDraft(CreatePostRequest req, String actorUserId) {
         log.info("[AdminPost][CreateDraft] actorUserId={}", actorUserId);
 
-        if (req == null) throw new BadRequestException("Body is required");
-        if (isEmpty(req.getTitle())) throw new BadRequestException("Title is required");
-        if (isEmpty(req.getSectionId())) throw new BadRequestException("Section is required");
-        if (req.getContentJson() == null) throw new BadRequestException("contentJson is required");
+        if (req == null)
+            throw new BadRequestException("Body is required");
+        if (isEmpty(req.getTitle()))
+            throw new BadRequestException("Title is required");
+        if (isEmpty(req.getSectionId()))
+            throw new BadRequestException("Section is required");
+        if (req.getContentJson() == null)
+            throw new BadRequestException("contentJson is required");
 
         UserEntity actor = mustGetUser(actorUserId);
-        SectionEntity section = mustGetSection(req.getSectionId());
+
+        SectionEntity section;
+        if (!isEmpty(req.getSection())) {
+            section = sectionRepository.findByKey(req.getSection())
+                    .orElseThrow(() -> new EntityNotFoundException("Section not found: " + req.getSection()));
+        } else {
+            section = mustGetSection(req.getSectionId());
+        }
 
         PostEntity post = new PostEntity();
         post.setId(uuidBinaryMapper.newUuidBytes());
@@ -73,6 +84,8 @@ public class PostAdminServiceImpl implements PostAdminService {
 
         post.setTitle(req.getTitle().trim());
         post.setSubtitle(req.getSubtitle());
+        post.setExcerpt(req.getExcerpt());
+        post.setCoverImageUrl(req.getCoverImageUrl());
 
         // slug
         String baseSlug = isEmpty(req.getSlug())
@@ -83,7 +96,15 @@ public class PostAdminServiceImpl implements PostAdminService {
         post.setStatus(PostStatusEnum.DRAFT);
 
         // content
-        post.setContentJson(req.getContentJson());
+        // content
+        String content = req.getContentJson();
+        if (content == null)
+            content = req.getContent(); // fallback
+
+        if (content == null)
+            throw new BadRequestException("content is required");
+
+        post.setContentJson(content);
         post.setContentMd(req.getContentMd());
         post.setContentHtml(req.getContentHtml());
         post.setContentText(req.getContentText());
@@ -107,19 +128,32 @@ public class PostAdminServiceImpl implements PostAdminService {
     public PostDto updatePost(String postId, UpdatePostRequest req, String actorUserId) {
         log.info("[AdminPost][Update] postId={}, actorUserId={}", postId, actorUserId);
 
-        if (isEmpty(postId)) throw new BadRequestException("postId is required");
-        if (req == null) throw new BadRequestException("Body is required");
+        if (isEmpty(postId))
+            throw new BadRequestException("postId is required");
+        if (req == null)
+            throw new BadRequestException("Body is required");
 
         UserEntity actor = mustGetUser(actorUserId);
         PostEntity post = mustGetPost(postId);
 
-        if (post.getDeletedAt() != null) throw new BadRequestException("Post was deleted");
+        if (post.getDeletedAt() != null)
+            throw new BadRequestException("Post was deleted");
 
         // update fields (partial)
-        if (!isEmpty(req.getTitle())) post.setTitle(req.getTitle().trim());
-        if (req.getSubtitle() != null) post.setSubtitle(req.getSubtitle());
+        if (!isEmpty(req.getTitle()))
+            post.setTitle(req.getTitle().trim());
+        if (req.getSubtitle() != null)
+            post.setSubtitle(req.getSubtitle());
+        if (req.getExcerpt() != null)
+            post.setExcerpt(req.getExcerpt());
+        if (req.getCoverImageUrl() != null)
+            post.setCoverImageUrl(req.getCoverImageUrl());
 
-        if (!isEmpty(req.getSectionId())) {
+        if (!isEmpty(req.getSection())) {
+            SectionEntity section = sectionRepository.findByKey(req.getSection())
+                    .orElseThrow(() -> new EntityNotFoundException("Section not found: " + req.getSection()));
+            post.setSection(section);
+        } else if (!isEmpty(req.getSectionId())) {
             SectionEntity section = mustGetSection(req.getSectionId());
             post.setSection(section);
         }
@@ -131,10 +165,17 @@ public class PostAdminServiceImpl implements PostAdminService {
             }
         }
 
-        if (req.getContentJson() != null) post.setContentJson(req.getContentJson());
-        if (req.getContentMd() != null) post.setContentMd(req.getContentMd());
-        if (req.getContentHtml() != null) post.setContentHtml(req.getContentHtml());
-        if (req.getContentText() != null) post.setContentText(req.getContentText());
+        if (req.getContentJson() != null)
+            post.setContentJson(req.getContentJson());
+        else if (req.getContent() != null)
+            post.setContentJson(req.getContent());
+
+        if (req.getContentMd() != null)
+            post.setContentMd(req.getContentMd());
+        if (req.getContentHtml() != null)
+            post.setContentHtml(req.getContentHtml());
+        if (req.getContentText() != null)
+            post.setContentText(req.getContentText());
 
         PostEntity saved = postRepository.save(post);
 
@@ -152,7 +193,8 @@ public class PostAdminServiceImpl implements PostAdminService {
     public PostDto getById(String postId) {
         log.info("[AdminPost][GetById] postId={}", postId);
         PostEntity post = mustGetPost(postId);
-        if (post.getDeletedAt() != null) throw new EntityNotFoundException("Post not found");
+        if (post.getDeletedAt() != null)
+            throw new EntityNotFoundException("Post not found");
         return postMapper.toDto(post);
     }
 
@@ -161,8 +203,10 @@ public class PostAdminServiceImpl implements PostAdminService {
     // =========================
     @Override
     public Page<PostDto> search(PostStatusEnum status, String sectionId, String q, int page, int size) {
-        if (page < 0) page = 0;
-        if (size <= 0) size = 10;
+        if (page < 0)
+            page = 0;
+        if (size <= 0)
+            size = 10;
 
         log.info("[AdminPost][Search] status={}, sectionId={}, q={}, page={}, size={}",
                 status, sectionId, q, page, size);
@@ -170,7 +214,8 @@ public class PostAdminServiceImpl implements PostAdminService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedDate"));
 
         byte[] sid = null;
-        if (!isEmpty(sectionId)) sid = uuidBinaryMapper.toBytes(sectionId);
+        if (!isEmpty(sectionId))
+            sid = uuidBinaryMapper.toBytes(sectionId);
 
         Page<PostEntity> entities = postRepository.adminSearch(status, sid, normalizeQuery(q), pageable);
 
@@ -196,9 +241,12 @@ public class PostAdminServiceImpl implements PostAdminService {
         UserEntity actor = mustGetUser(actorUserId);
         PostEntity post = mustGetPost(postId);
 
-        if (post.getDeletedAt() != null) throw new BadRequestException("Post was deleted");
-        if (isEmpty(post.getTitle())) throw new BadRequestException("Title is required to publish");
-        if (post.getSection() == null) throw new BadRequestException("Section is required to publish");
+        if (post.getDeletedAt() != null)
+            throw new BadRequestException("Post was deleted");
+        if (isEmpty(post.getTitle()))
+            throw new BadRequestException("Title is required to publish");
+        if (post.getSection() == null)
+            throw new BadRequestException("Section is required to publish");
 
         post.setStatus(PostStatusEnum.PUBLISHED);
         // publishedAt: DB trigger set, hoặc bạn set ở đây nếu bạn không dùng trigger
@@ -221,7 +269,8 @@ public class PostAdminServiceImpl implements PostAdminService {
         UserEntity actor = mustGetUser(actorUserId);
         PostEntity post = mustGetPost(postId);
 
-        if (post.getDeletedAt() != null) throw new BadRequestException("Post was deleted");
+        if (post.getDeletedAt() != null)
+            throw new BadRequestException("Post was deleted");
 
         post.setStatus(PostStatusEnum.DRAFT);
         // publishedAt: trigger sẽ set null
@@ -244,15 +293,14 @@ public class PostAdminServiceImpl implements PostAdminService {
         // Rule: chỉ 1 featured
         frontPageItemRepository.clearPinned();
 
-        FrontPageItemEntity item =
-                frontPageItemRepository.findByPost(post)
-                        .orElseGet(() -> {
-                            FrontPageItemEntity f = new FrontPageItemEntity();
-                            f.setPost(post);
-                            f.setPosition(1);
-                            f.setActive(true);
-                            return f;
-                        });
+        FrontPageItemEntity item = frontPageItemRepository.findByPost(post)
+                .orElseGet(() -> {
+                    FrontPageItemEntity f = new FrontPageItemEntity();
+                    f.setPost(post);
+                    f.setPosition(1);
+                    f.setActive(true);
+                    return f;
+                });
 
         item.setPinned(true);
         item.setActive(true);
@@ -260,7 +308,6 @@ public class PostAdminServiceImpl implements PostAdminService {
 
         frontPageItemRepository.save(item);
     }
-
 
     @Override
     @Transactional
@@ -271,7 +318,8 @@ public class PostAdminServiceImpl implements PostAdminService {
         UserEntity actor = mustGetUser(actorUserId);
         PostEntity post = mustGetPost(postId);
 
-        if (post.getDeletedAt() != null) throw new BadRequestException("Post was deleted");
+        if (post.getDeletedAt() != null)
+            throw new BadRequestException("Post was deleted");
 
         post.setShowOnFrontPage(showOnFront);
         PostEntity saved = postRepository.save(post);
@@ -310,7 +358,8 @@ public class PostAdminServiceImpl implements PostAdminService {
     // =========================
     private UserEntity mustGetUser(String userId) {
         log.info("[Get User] userId={}", userId);
-        if (isEmpty(userId)) throw new BadRequestException("actorUserId is required");
+        if (isEmpty(userId))
+            throw new BadRequestException("actorUserId is required");
         byte[] uid = uuidBinaryMapper.toBytes(userId);
         return userRepository.findById(uid)
                 .orElseThrow(() -> new EntityNotFoundException("User not found: " + userId));
@@ -329,6 +378,7 @@ public class PostAdminServiceImpl implements PostAdminService {
         return postRepository.findById(pid)
                 .orElseThrow(() -> new EntityNotFoundException("Post not found: " + postId));
     }
+
     // Sau nay sẽ sử dụng kafka để handle
     private void insertRevision(PostEntity post, UserEntity editor, String reason) {
         log.info("[Start dump revision]");
@@ -359,10 +409,10 @@ public class PostAdminServiceImpl implements PostAdminService {
     }
 
     private void insertAudit(UserEntity actor,
-                             AuditActionEnum action,
-                             AuditEntityTypeEnum entityType,
-                             byte[] entityId,
-                             String metaJson) {
+            AuditActionEnum action,
+            AuditEntityTypeEnum entityType,
+            byte[] entityId,
+            String metaJson) {
         log.info("[AdminPost][Start dump Audit user]");
         AuditLogEntity logEntity = new AuditLogEntity();
         logEntity.setActor(actor);
@@ -371,7 +421,7 @@ public class PostAdminServiceImpl implements PostAdminService {
         logEntity.setEntityId(entityId);
         logEntity.setCreatedDate(LocalDateTime.now());
         // metaJson: tuỳ mapping meta là JSON object hay String
-//        logEntity.setMeta(metaJson);
+        // logEntity.setMeta(metaJson);
         log.debug("[AdminPost][Audit] actor={}, action={}, entityType={}, entityId={}",
                 uuidBinaryMapper.toUuid(actor.getId()), action, entityType, uuidBinaryMapper.toUuid(entityId));
         auditLogRepository.save(logEntity);
@@ -383,7 +433,8 @@ public class PostAdminServiceImpl implements PostAdminService {
 
         while (true) {
             PostEntity conflict = postRepository.findBySlug(slug).orElse(null);
-            if (conflict == null) return slug;
+            if (conflict == null)
+                return slug;
 
             // update case: nếu conflict chính là post hiện tại thì ok
             if (currentPostId != null && bytesEquals(conflict.getId(), currentPostId)) {
@@ -396,11 +447,15 @@ public class PostAdminServiceImpl implements PostAdminService {
     }
 
     private boolean bytesEquals(byte[] a, byte[] b) {
-        if (a == b) return true;
-        if (a == null || b == null) return false;
-        if (a.length != b.length) return false;
+        if (a == b)
+            return true;
+        if (a == null || b == null)
+            return false;
+        if (a.length != b.length)
+            return false;
         for (int i = 0; i < a.length; i++) {
-            if (a[i] != b[i]) return false;
+            if (a[i] != b[i])
+                return false;
         }
         return true;
     }
@@ -410,7 +465,8 @@ public class PostAdminServiceImpl implements PostAdminService {
     }
 
     private String normalizeQuery(String q) {
-        if (q == null) return null;
+        if (q == null)
+            return null;
         String t = q.trim();
         return t.isEmpty() ? null : t;
     }

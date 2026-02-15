@@ -36,7 +36,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest req) {
-        if (req == null) throw new BadRequestException("Body is required");
+        if (req == null)
+            throw new BadRequestException("Body is required");
         if (req.getEmail() == null || req.getEmail().trim().isEmpty()) {
             throw new BadRequestException("email is required");
         }
@@ -50,9 +51,19 @@ public class AuthServiceImpl implements AuthService {
         UserEntity user = userRepository.findByEmailAndActiveTrue(email)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        // giả định UserEntity có field passwordHash
+        // Support both BCrypt hashed and plain-text passwords (dev seed data)
         String hash = user.getPasswordHash();
-        if (hash == null || !encoder.matches(req.getPassword(), hash)) {
+        boolean matched = false;
+        if (hash != null) {
+            if (hash.startsWith("$2")) {
+                // BCrypt hash
+                matched = encoder.matches(req.getPassword(), hash);
+            } else {
+                // Plain-text (dev seed data)
+                matched = hash.equals(req.getPassword());
+            }
+        }
+        if (!matched) {
             log.warn("[Auth][Login] invalid credentials email={}", email);
             throw new BadRequestException("Invalid email or password");
         }
@@ -76,8 +87,7 @@ public class AuthServiceImpl implements AuthService {
 
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "User not found: " + actorUserId
-                ));
+                        "User not found: " + actorUserId));
 
         if (!user.isActive()) {
             throw new BadRequestException("User is inactive");

@@ -18,4 +18,10 @@ public class UpdatePostRequest {
     private String contentMd;
     private String contentHtml;
     private String contentText;
+
+    // frontend compatibility
+    private String section; // key
+    private String excerpt;
+    private String coverImageUrl;
+    private String content;
 }

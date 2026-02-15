@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "posts")
-public class PostEntity extends BaseUuidEntity{
+public class PostEntity extends BaseUuidEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "section_id", nullable = false)
@@ -27,6 +27,9 @@ public class PostEntity extends BaseUuidEntity{
 
     @Column(name = "subtitle", length = 500)
     private String subtitle;
+
+    @Column(name = "excerpt", length = 1000)
+    private String excerpt;
 
     @Column(name = "slug", nullable = false, length = 300, unique = true)
     private String slug;

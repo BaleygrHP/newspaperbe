@@ -16,5 +16,8 @@ spring:
 #    Local
     url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/newspaper
     username: root
-    password: hung2000
+    password: admin
     driver-class-name: com.mysql.cj.jdbc.Driver
+
+app:
+  internal-proxy-key: ${INTERNAL_PROXY_KEY:}
