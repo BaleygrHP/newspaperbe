@@ -34,6 +34,12 @@ public class SectionServiceImpl implements SectionService {
     @Autowired
     private UuidBinaryMapper uuidBinaryMapper;
 
+    private String normalizeOptionalText(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     // ===== Public =====
     @Override
     @Transactional(readOnly = true)
@@ -132,6 +138,7 @@ public class SectionServiceImpl implements SectionService {
         sectionEntity.setId(uuidBinaryMapper.newUuidBytes());
         sectionEntity.setKey(key);
         sectionEntity.setName(req.getName().trim());
+        sectionEntity.setDescription(normalizeOptionalText(req.getDescription()));
         sectionEntity.setSortOrder(req.getSortOrder() != null ? req.getSortOrder() : 0);
         sectionEntity.setActive(req.getActive() != null ? req.getActive() : true);
         sectionEntity.setVisibility(req.getVisibility());
@@ -152,6 +159,7 @@ public class SectionServiceImpl implements SectionService {
                 .orElseThrow(() -> new EntityNotFoundException("Section not found: " + id));
 
         if (req.getName() != null) sectionEntity.setName(req.getName().trim());
+        if (req.getDescription() != null) sectionEntity.setDescription(normalizeOptionalText(req.getDescription()));
         if (req.getSortOrder() != null) sectionEntity.setSortOrder(req.getSortOrder());
         if (req.getActive() != null) sectionEntity.setActive(req.getActive());
         if (req.getVisibility() != null) sectionEntity.setVisibility(req.getVisibility());

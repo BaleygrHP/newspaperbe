@@ -8,6 +8,7 @@ import lombok.Setter;
 @Setter
 public class UpdateSectionRequest {
     private String name;
+    private String description;
     private Integer sortOrder;
     private Boolean active;
     private SectionVisibilityEnum visibility;

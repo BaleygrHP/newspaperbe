@@ -34,4 +34,11 @@ public class GlobalExceptionHandler {
         ErrorMessageResponseDto errorResponseDto = new ErrorMessageResponseDto(ErrorCodeEnum.UNPROCESSABLE_ENTITY, ex.getMessage());
         return new ResponseEntity<>(errorResponseDto, HttpStatus.UNPROCESSABLE_ENTITY);
     }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorMessageResponseDto> handleConflictException(ConflictException ex) {
+        logger.warn("ConflictException", ex);
+        ErrorMessageResponseDto errorResponseDto = new ErrorMessageResponseDto(ErrorCodeEnum.CONFLICT, ex.getMessage());
+        return new ResponseEntity<>(errorResponseDto, HttpStatus.CONFLICT);
+    }
 }

@@ -217,7 +217,10 @@ public class PostAdminServiceImpl implements PostAdminService {
         log.info("[AdminPost][Search] status={}, sectionId={}, q={}, page={}, size={}",
                 status, sectionId, q, page, size);
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedDate"));
+        Sort sort = status == PostStatusEnum.PUBLISHED
+                ? Sort.by(Sort.Direction.DESC, "publishedAt")
+                : Sort.by(Sort.Direction.DESC, "updatedDate");
+        Pageable pageable = PageRequest.of(page, size, sort);
 
         byte[] sid = null;
         if (!isEmpty(sectionId))
