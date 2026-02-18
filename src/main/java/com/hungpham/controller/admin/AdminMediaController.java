@@ -1,5 +1,6 @@
 package com.hungpham.controller.admin;
 
+import com.hungpham.config.security.AuthContext;
 import com.hungpham.common.enums.MediaKindEnum;
 import com.hungpham.dtos.MediaAssetDto;
 import com.hungpham.dtos.MediaBinaryDto;
@@ -9,6 +10,7 @@ import com.hungpham.service.MediaAdminService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,14 +21,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/media")
+@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
 public class AdminMediaController {
 
     @Autowired
     private MediaAdminService mediaAdminService;
 
-    private String actor(@RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return actorUserId;
-    }
+    @Autowired
+    private AuthContext authContext;
 
     @GetMapping
     public Page<MediaAssetDto> search(
@@ -46,9 +48,8 @@ public class AdminMediaController {
     }
 
     @PostMapping("/url")
-    public MediaAssetDto createByUrl(@RequestBody CreateMediaByUrlRequest req,
-                                     @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return mediaAdminService.createByUrl(req, actor(actorUserId));
+    public MediaAssetDto createByUrl(@RequestBody CreateMediaByUrlRequest req) {
+        return mediaAdminService.createByUrl(req, authContext.requireUserId());
     }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -59,8 +60,7 @@ public class AdminMediaController {
                                 @RequestParam(value = "caption", required = false) String caption,
                                 @RequestParam(value = "location", required = false) String location,
                                 @RequestParam(value = "takenAt", required = false) String takenAt,
-                                @RequestParam(value = "category", required = false) String category,
-                                @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
+                                @RequestParam(value = "category", required = false) String category) {
         return mediaAdminService.createByUpload(
                 file,
                 kind,
@@ -70,21 +70,19 @@ public class AdminMediaController {
                 location,
                 takenAt,
                 category,
-                actor(actorUserId)
+                authContext.requireUserId()
         );
     }
 
     @PatchMapping("/{id}")
-    public MediaAssetDto update(@PathVariable String id,
-                                @RequestBody UpdateMediaRequest req,
-                                @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return mediaAdminService.update(id, req, actor(actorUserId));
+    public MediaAssetDto update(@PathVariable String id, @RequestBody UpdateMediaRequest req) {
+        return mediaAdminService.update(id, req, authContext.requireUserId());
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public void disable(@PathVariable String id,
-                        @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        mediaAdminService.disable(id, actor(actorUserId));
+    public void disable(@PathVariable String id) {
+        mediaAdminService.disable(id, authContext.requireUserId());
     }
 
     @GetMapping("/categories")

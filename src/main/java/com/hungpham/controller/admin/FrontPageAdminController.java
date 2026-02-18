@@ -1,6 +1,7 @@
 package com.hungpham.controller.admin;
 
 import com.hungpham.common.exception.BadRequestException;
+import com.hungpham.config.security.AuthContext;
 import com.hungpham.dtos.FrontPageCompositionDto;
 import com.hungpham.dtos.FrontPageItemDto;
 import com.hungpham.requests.ReorderFrontPageItemsRequest;
@@ -8,6 +9,7 @@ import com.hungpham.requests.UpdateFrontPageItemRequest;
 import com.hungpham.requests.UpsertCuratedRequest;
 import com.hungpham.service.FrontPageService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -15,14 +17,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/front-page")
+@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
 public class FrontPageAdminController {
 
     @Autowired
     private FrontPageService frontPageService;
 
-    private String actor(@RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return actorUserId;
-    }
+    @Autowired
+    private AuthContext authContext;
 
     private Long expectedVersion(HttpServletRequest request) {
         String ifMatch = request.getHeader("If-Match");
@@ -53,21 +55,18 @@ public class FrontPageAdminController {
 
     @PostMapping("/featured")
     public FrontPageItemDto setFeatured(@RequestParam("postId") String postId,
-                                        HttpServletRequest request,
-                                        @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return frontPageService.setFeatured(postId, actor(actorUserId), expectedVersion(request));
+                                        HttpServletRequest request) {
+        return frontPageService.setFeatured(postId, authContext.requireUserId(), expectedVersion(request));
     }
 
     @DeleteMapping("/featured")
-    public FrontPageCompositionDto clearFeatured(HttpServletRequest request,
-                                                 @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return frontPageService.clearFeatured(actor(actorUserId), expectedVersion(request));
+    public FrontPageCompositionDto clearFeatured(HttpServletRequest request) {
+        return frontPageService.clearFeatured(authContext.requireUserId(), expectedVersion(request));
     }
 
     @PostMapping("/curated")
     public FrontPageItemDto upsertCurated(@RequestBody UpsertCuratedRequest req,
-                                          HttpServletRequest request,
-                                          @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
+                                          HttpServletRequest request) {
         return frontPageService.upsertCurated(
                 req.getPostId(),
                 req.getPosition(),
@@ -75,7 +74,7 @@ public class FrontPageAdminController {
                 req.getStartAt(),
                 req.getEndAt(),
                 req.getNote(),
-                actor(actorUserId),
+                authContext.requireUserId(),
                 expectedVersion(request)
         );
     }
@@ -88,22 +87,19 @@ public class FrontPageAdminController {
     @PatchMapping("/items/{id}")
     public FrontPageItemDto updateItem(@PathVariable Long id,
                                        @RequestBody UpdateFrontPageItemRequest req,
-                                       HttpServletRequest request,
-                                       @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return frontPageService.updateItem(id, req, actor(actorUserId), expectedVersion(request));
+                                       HttpServletRequest request) {
+        return frontPageService.updateItem(id, req, authContext.requireUserId(), expectedVersion(request));
     }
 
     @PostMapping("/reorder")
     public void reorder(@RequestBody ReorderFrontPageItemsRequest req,
-                        HttpServletRequest request,
-                        @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        frontPageService.reorder(req.getOrderedIds(), actor(actorUserId), expectedVersion(request));
+                        HttpServletRequest request) {
+        frontPageService.reorder(req.getOrderedIds(), authContext.requireUserId(), expectedVersion(request));
     }
 
     @DeleteMapping("/items/{id}")
     public void delete(@PathVariable Long id,
-                       HttpServletRequest request,
-                       @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        frontPageService.deleteItem(id, actor(actorUserId), expectedVersion(request));
+                       HttpServletRequest request) {
+        frontPageService.deleteItem(id, authContext.requireUserId(), expectedVersion(request));
     }
 }

@@ -71,8 +71,8 @@ public class InternalProxyKeyFilter implements Filter {
 
     private boolean isPublicPath(String path) {
         return path.startsWith("/api/public/")
-                || path.equals("/api/auth/login")
-                || path.startsWith("/api/auth/login");
+                || path.equals("/api/health")
+                || path.equals("/health");
     }
 
     private void writeError(HttpServletResponse res, int status, String errorCode, String message)

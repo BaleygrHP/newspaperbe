@@ -21,6 +21,10 @@ spring:
 
 app:
   internal-proxy-key: ${INTERNAL_PROXY_KEY:}
+  auth:
+    jwt-secret: ${AUTH_JWT_SECRET:change-me-change-me-change-me-change-me}
+    access-ttl-seconds: ${AUTH_ACCESS_TTL_SECONDS:900}
+    refresh-ttl-seconds: ${AUTH_REFRESH_TTL_SECONDS:604800}
   media:
     max-bytes: ${MEDIA_MAX_BYTES:26214400}
     local-storage:

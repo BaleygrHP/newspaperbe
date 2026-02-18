@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -40,5 +42,21 @@ public class GlobalExceptionHandler {
         logger.warn("ConflictException", ex);
         ErrorMessageResponseDto errorResponseDto = new ErrorMessageResponseDto(ErrorCodeEnum.CONFLICT, ex.getMessage());
         return new ResponseEntity<>(errorResponseDto, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorMessageResponseDto> handleAuthenticationException(AuthenticationException ex) {
+        logger.warn("AuthenticationException", ex);
+        ErrorMessageResponseDto errorResponseDto =
+                new ErrorMessageResponseDto(ErrorCodeEnum.AUTHENTICATION_FAILED, ex.getMessage());
+        return new ResponseEntity<>(errorResponseDto, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorMessageResponseDto> handleAccessDeniedException(AccessDeniedException ex) {
+        logger.warn("AccessDeniedException", ex);
+        ErrorMessageResponseDto errorResponseDto =
+                new ErrorMessageResponseDto(ErrorCodeEnum.AUTHORIZATION_FAILED, ex.getMessage());
+        return new ResponseEntity<>(errorResponseDto, HttpStatus.FORBIDDEN);
     }
 }

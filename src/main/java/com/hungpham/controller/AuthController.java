@@ -1,35 +1,63 @@
 package com.hungpham.controller;
 
+import com.hungpham.config.security.AuthContext;
 import com.hungpham.dtos.UserDto;
 import com.hungpham.requests.auth.LoginRequest;
-import com.hungpham.response.auth.LoginResponse;
+import com.hungpham.requests.auth.LogoutRequest;
+import com.hungpham.requests.auth.RefreshTokenRequest;
+import com.hungpham.response.auth.AuthTokenResponse;
 import com.hungpham.service.AuthService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    @Autowired
-    private AuthService authService;
+    private final AuthService authService;
+    private final AuthContext authContext;
 
-    @PostMapping("/login")
-    public LoginResponse login(@RequestBody LoginRequest req) {
-        return authService.login(req);
+    public AuthController(AuthService authService, AuthContext authContext) {
+        this.authService = authService;
+        this.authContext = authContext;
     }
 
-    @GetMapping("/me")
-    public UserDto me(@RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return authService.me(actorUserId);
+    @PostMapping("/token")
+    public AuthTokenResponse token(@RequestBody LoginRequest req, HttpServletRequest request) {
+        return authService.token(req, clientIp(request), userAgent(request));
+    }
+
+    @PostMapping("/refresh")
+    public AuthTokenResponse refresh(@RequestBody RefreshTokenRequest req, HttpServletRequest request) {
+        return authService.refresh(req, clientIp(request), userAgent(request));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout() {
-        // Stateless auth – cookie clearing is done on the frontend side
+    public ResponseEntity<?> logout(@RequestBody(required = false) LogoutRequest req) {
+        authService.logout(req);
         return ResponseEntity.ok(Collections.singletonMap("ok", true));
+    }
+
+    @GetMapping("/me")
+    public UserDto me() {
+        return authService.me(authContext.requireUserId());
+    }
+
+    private String clientIp(HttpServletRequest request) {
+        if (request == null) return null;
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.trim().isEmpty()) {
+            int idx = forwarded.indexOf(',');
+            return idx > -1 ? forwarded.substring(0, idx).trim() : forwarded.trim();
+        }
+        return request.getRemoteAddr();
+    }
+
+    private String userAgent(HttpServletRequest request) {
+        if (request == null) return null;
+        return request.getHeader("User-Agent");
     }
 }
