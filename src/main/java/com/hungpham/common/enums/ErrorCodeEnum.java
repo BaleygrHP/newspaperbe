@@ -17,7 +17,8 @@ public enum ErrorCodeEnum {
     ILLEGAL_ARGUMENTS,
     UNPROCESSABLE_ENTITY,
     IO_ERROR,
-    FORBIDDEN;
+    FORBIDDEN,
+    CONFLICT;
     public static ErrorCodeEnum from(String value) {
         for (ErrorCodeEnum s : values()) {
             if (s.name().equalsIgnoreCase(value)) {

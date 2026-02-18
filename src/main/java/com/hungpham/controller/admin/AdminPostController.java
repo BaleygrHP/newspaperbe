@@ -1,37 +1,35 @@
 package com.hungpham.controller.admin;
 
 import com.hungpham.common.enums.PostStatusEnum;
+import com.hungpham.config.security.AuthContext;
 import com.hungpham.dtos.PostDto;
 import com.hungpham.requests.CreatePostRequest;
 import com.hungpham.requests.UpdatePostRequest;
 import com.hungpham.service.PostAdminService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/admin/posts")
+@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
 public class AdminPostController {
 
     @Autowired
     private PostAdminService postAdminService;
 
-    // Tạm thời phase 1: actorUserId lấy từ header để pass nhanh
-    private String actor(@RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return actorUserId; // phase 2 sẽ lấy từ security context
-    }
+    @Autowired
+    private AuthContext authContext;
 
     @PostMapping
-    public PostDto createDraft(@RequestBody CreatePostRequest req,
-                               @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return postAdminService.createDraft(req, actor(actorUserId));
+    public PostDto createDraft(@RequestBody CreatePostRequest req) {
+        return postAdminService.createDraft(req, authContext.requireUserId());
     }
 
     @PutMapping("/{postId}")
-    public PostDto update(@PathVariable String postId,
-                          @RequestBody UpdatePostRequest req,
-                          @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return postAdminService.updatePost(postId, req, actor(actorUserId));
+    public PostDto update(@PathVariable String postId, @RequestBody UpdatePostRequest req) {
+        return postAdminService.updatePost(postId, req, authContext.requireUserId());
     }
 
     @GetMapping("/{postId}")
@@ -51,20 +49,18 @@ public class AdminPostController {
     }
 
     @PostMapping("/{postId}/publish")
-    public PostDto publish(@PathVariable String postId,
-                           @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return postAdminService.publish(postId, actor(actorUserId));
+    public PostDto publish(@PathVariable String postId) {
+        return postAdminService.publish(postId, authContext.requireUserId());
     }
 
     @PostMapping("/{postId}/unpublish")
-    public PostDto unpublish(@PathVariable String postId,
-                             @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return postAdminService.unpublish(postId, actor(actorUserId));
+    public PostDto unpublish(@PathVariable String postId) {
+        return postAdminService.unpublish(postId, authContext.requireUserId());
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{postId}")
-    public void softDelete(@PathVariable String postId,
-                           @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        postAdminService.softDelete(postId, actor(actorUserId));
+    public void softDelete(@PathVariable String postId) {
+        postAdminService.softDelete(postId, authContext.requireUserId());
     }
 }

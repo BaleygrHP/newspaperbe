@@ -3,6 +3,7 @@ package com.hungpham.entity;
 import com.hungpham.common.enums.PostStatusEnum;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -11,7 +12,7 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "posts")
-public class PostEntity extends BaseUuidEntity{
+public class PostEntity extends BaseUuidEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "section_id", nullable = false)
@@ -26,6 +27,9 @@ public class PostEntity extends BaseUuidEntity{
 
     @Column(name = "subtitle", length = 500)
     private String subtitle;
+
+    @Column(name = "excerpt", length = 1000)
+    private String excerpt;
 
     @Column(name = "slug", nullable = false, length = 300, unique = true)
     private String slug;
@@ -62,6 +66,7 @@ public class PostEntity extends BaseUuidEntity{
     private String coverAlt;
 
     @Column(name = "published_at")
+    @CreationTimestamp
     private LocalDateTime publishedAt;
 
     @Column(name = "deleted_at")

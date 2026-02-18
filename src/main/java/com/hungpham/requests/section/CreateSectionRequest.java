@@ -10,6 +10,7 @@ import lombok.Setter;
 public class CreateSectionRequest {
     private String key;                // unique: editorial/notes/diary...
     private String name;               // display name
+    private String description;
     private Integer sortOrder;         // menu order
     private Boolean active;            // default true
     private SectionVisibilityEnum visibility; // PUBLIC/PRIVATE

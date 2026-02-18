@@ -1,37 +1,72 @@
 package com.hungpham.controller.admin;
 
-import com.hungpham.entity.FrontPageItemEntity;
+import com.hungpham.common.exception.BadRequestException;
+import com.hungpham.config.security.AuthContext;
+import com.hungpham.dtos.FrontPageCompositionDto;
+import com.hungpham.dtos.FrontPageItemDto;
 import com.hungpham.requests.ReorderFrontPageItemsRequest;
 import com.hungpham.requests.UpdateFrontPageItemRequest;
 import com.hungpham.requests.UpsertCuratedRequest;
 import com.hungpham.service.FrontPageService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/front-page")
+@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
 public class FrontPageAdminController {
 
     @Autowired
     private FrontPageService frontPageService;
 
-    private String actor(@RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return actorUserId;
+    @Autowired
+    private AuthContext authContext;
+
+    private Long expectedVersion(HttpServletRequest request) {
+        String ifMatch = request.getHeader("If-Match");
+        String fallback = request.getHeader("X-FrontPage-Version");
+        String raw = (ifMatch != null && !ifMatch.trim().isEmpty()) ? ifMatch : fallback;
+        if (raw == null || raw.trim().isEmpty()) return null;
+
+        String normalized = raw.trim();
+        if (normalized.startsWith("W/")) {
+            normalized = normalized.substring(2).trim();
+        }
+        if (normalized.startsWith("\"") && normalized.endsWith("\"") && normalized.length() >= 2) {
+            normalized = normalized.substring(1, normalized.length() - 1);
+        }
+        if (normalized.isEmpty()) return null;
+
+        try {
+            return Long.parseLong(normalized);
+        } catch (NumberFormatException ex) {
+            throw new BadRequestException("front page version is invalid");
+        }
     }
 
-    // Set featured: pinned=true (chỉ 1)
+    @GetMapping("/composition")
+    public FrontPageCompositionDto getComposition() {
+        return frontPageService.getComposition();
+    }
+
     @PostMapping("/featured")
-    public FrontPageItemEntity setFeatured(@RequestParam("postId") String postId,
-                                           @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return frontPageService.setFeatured(postId, actor(actorUserId));
+    public FrontPageItemDto setFeatured(@RequestParam("postId") String postId,
+                                        HttpServletRequest request) {
+        return frontPageService.setFeatured(postId, authContext.requireUserId(), expectedVersion(request));
     }
 
-    // Upsert curated: pinned=false + position + active + time window
+    @DeleteMapping("/featured")
+    public FrontPageCompositionDto clearFeatured(HttpServletRequest request) {
+        return frontPageService.clearFeatured(authContext.requireUserId(), expectedVersion(request));
+    }
+
     @PostMapping("/curated")
-    public FrontPageItemEntity upsertCurated(@RequestBody UpsertCuratedRequest req,
-                                             @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
+    public FrontPageItemDto upsertCurated(@RequestBody UpsertCuratedRequest req,
+                                          HttpServletRequest request) {
         return frontPageService.upsertCurated(
                 req.getPostId(),
                 req.getPosition(),
@@ -39,35 +74,32 @@ public class FrontPageAdminController {
                 req.getStartAt(),
                 req.getEndAt(),
                 req.getNote(),
-                actor(actorUserId)
+                authContext.requireUserId(),
+                expectedVersion(request)
         );
     }
 
-    // ===== Admin load items =====
     @GetMapping("/items")
-    public List<FrontPageItemEntity> listItems() {
+    public List<FrontPageItemDto> listItems() {
         return frontPageService.getAllItemsForAdmin();
     }
 
-
     @PatchMapping("/items/{id}")
-    public FrontPageItemEntity updateItem(@PathVariable Long id,
-                                          @RequestBody UpdateFrontPageItemRequest req,
-                                          @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        return frontPageService.updateItem(id, req, actor(actorUserId));
+    public FrontPageItemDto updateItem(@PathVariable Long id,
+                                       @RequestBody UpdateFrontPageItemRequest req,
+                                       HttpServletRequest request) {
+        return frontPageService.updateItem(id, req, authContext.requireUserId(), expectedVersion(request));
     }
 
-    // ===== Reorder =====
     @PostMapping("/reorder")
     public void reorder(@RequestBody ReorderFrontPageItemsRequest req,
-                        @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        frontPageService.reorder(req.getOrderedIds(), actor(actorUserId));
+                        HttpServletRequest request) {
+        frontPageService.reorder(req.getOrderedIds(), authContext.requireUserId(), expectedVersion(request));
     }
 
-    // ===== Delete item =====
     @DeleteMapping("/items/{id}")
     public void delete(@PathVariable Long id,
-                       @RequestHeader(value = "X-Actor-UserId", required = false) String actorUserId) {
-        frontPageService.deleteItem(id, actor(actorUserId));
+                       HttpServletRequest request) {
+        frontPageService.deleteItem(id, authContext.requireUserId(), expectedVersion(request));
     }
 }

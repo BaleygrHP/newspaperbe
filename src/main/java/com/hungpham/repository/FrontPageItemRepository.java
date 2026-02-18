@@ -25,6 +25,8 @@ public interface FrontPageItemRepository extends JpaRepository<FrontPageItemEnti
      */
     Optional<FrontPageItemEntity> findFirstByPinnedTrueAndActiveTrue();
 
+    Optional<FrontPageItemEntity> findFirstByPinnedTrueAndActiveTrueOrderByUpdatedAtDescIdDesc();
+
     /**
      * Clear featured (chỉ 1 bài được pinned)
      */
@@ -34,11 +36,19 @@ public interface FrontPageItemRepository extends JpaRepository<FrontPageItemEnti
             "where f.pinned = true")
     int clearPinned();
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update FrontPageItemEntity f " +
+            "set f.pinned = false " +
+            "where f.pinned = true and f.active = true")
+    int clearPinnedActive();
+
     // =========================
     // LIST ACTIVE ITEMS
     // =========================
 
     List<FrontPageItemEntity> findByActiveTrueOrderByPinnedDescPositionAsc();
+
+    List<FrontPageItemEntity> findByActiveTrueAndPinnedFalseOrderByPositionAscIdAsc();
 
     /**
      * Lấy items đang active + nằm trong time window
@@ -64,4 +74,7 @@ public interface FrontPageItemRepository extends JpaRepository<FrontPageItemEnti
 
     @Query("select f from FrontPageItemEntity f order by f.pinned desc, f.position asc, f.id asc")
     List<FrontPageItemEntity> findAllOrderByPinnedDescPositionAsc();
+
+    @Query("select max(f.updatedAt) from FrontPageItemEntity f")
+    LocalDateTime findMaxUpdatedAt();
 }

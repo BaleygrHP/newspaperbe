@@ -16,5 +16,24 @@ spring:
 #    Local
     url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/newspaper
     username: root
-    password: hung2000
+    password: admin
     driver-class-name: com.mysql.cj.jdbc.Driver
+
+app:
+  internal-proxy-key: ${INTERNAL_PROXY_KEY:}
+  auth:
+    jwt-secret: ${AUTH_JWT_SECRET:change-me-change-me-change-me-change-me}
+    access-ttl-seconds: ${AUTH_ACCESS_TTL_SECONDS:900}
+    refresh-ttl-seconds: ${AUTH_REFRESH_TTL_SECONDS:604800}
+  media:
+    max-bytes: ${MEDIA_MAX_BYTES:26214400}
+    local-storage:
+      root: ${MEDIA_LOCAL_ROOT:./storage/media}
+    allowed-mime-types: ${MEDIA_ALLOWED_MIME_TYPES:image/jpeg,image/png,image/webp,image/gif,image/avif,image/svg+xml,video/mp4,video/webm,application/pdf}
+    disallowed-mime-types: ${MEDIA_DISALLOWED_MIME_TYPES:application/x-msdownload,text/html}
+    url-fetch:
+      connect-timeout-ms: ${MEDIA_URL_CONNECT_TIMEOUT_MS:5000}
+      read-timeout-ms: ${MEDIA_URL_READ_TIMEOUT_MS:15000}
+      max-bytes: ${MEDIA_URL_MAX_BYTES:26214400}
+      max-redirects: ${MEDIA_URL_MAX_REDIRECTS:3}
+      block-private-network: ${MEDIA_URL_BLOCK_PRIVATE_NETWORK:true}

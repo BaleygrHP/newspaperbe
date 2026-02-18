@@ -29,6 +29,9 @@ public class MediaAssetEntity extends BaseUuidEntity{
     @Column(name = "url", nullable = false, columnDefinition = "TEXT")
     private String url;
 
+    @Column(name = "storage_key", length = 512)
+    private String storageKey;
+
     @Column(name = "mime_type", nullable = false, length = 120)
     private String mimeType;
 
@@ -46,6 +49,21 @@ public class MediaAssetEntity extends BaseUuidEntity{
 
     @Column(name = "title", length = 300)
     private String title;
+
+    @Column(name = "original_file_name", length = 255)
+    private String originalFileName;
+
+    @Column(length = 255)
+    private String caption;
+
+    @Column(length = 120)
+    private String location;
+
+    @Column(name = "taken_at")
+    private LocalDateTime takenAt;
+
+    @Column(length = 64)
+    private String category;
 
     @Column(name = "file_hash", length = 64)
     private String fileHash;

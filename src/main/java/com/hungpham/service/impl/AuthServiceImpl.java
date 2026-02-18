@@ -7,82 +7,140 @@ import com.hungpham.entity.UserEntity;
 import com.hungpham.mappers.UserMapper;
 import com.hungpham.mappers.UuidBinaryMapper;
 import com.hungpham.repository.UserRepository;
-
 import com.hungpham.requests.auth.LoginRequest;
-import com.hungpham.response.auth.LoginResponse;
+import com.hungpham.requests.auth.LogoutRequest;
+import com.hungpham.requests.auth.RefreshTokenRequest;
+import com.hungpham.response.auth.AuthTokenResponse;
 import com.hungpham.service.AuthService;
+import com.hungpham.service.auth.RefreshTokenService;
+import com.hungpham.service.auth.TokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 public class AuthServiceImpl implements AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private UserMapper userMapper;
+    private final UserRepository userRepository;
+    private final UserMapper userMapper;
+    private final UuidBinaryMapper uuidBinaryMapper;
+    private final PasswordEncoder passwordEncoder;
+    private final TokenService tokenService;
+    private final RefreshTokenService refreshTokenService;
 
-    @Autowired
-    private UuidBinaryMapper uuidBinaryMapper;
-
-    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    public AuthServiceImpl(UserRepository userRepository,
+                           UserMapper userMapper,
+                           UuidBinaryMapper uuidBinaryMapper,
+                           PasswordEncoder passwordEncoder,
+                           TokenService tokenService,
+                           RefreshTokenService refreshTokenService) {
+        this.userRepository = userRepository;
+        this.userMapper = userMapper;
+        this.uuidBinaryMapper = uuidBinaryMapper;
+        this.passwordEncoder = passwordEncoder;
+        this.tokenService = tokenService;
+        this.refreshTokenService = refreshTokenService;
+    }
 
     @Override
-    @Transactional(readOnly = true)
-    public LoginResponse login(LoginRequest req) {
+    @Transactional
+    public AuthTokenResponse token(LoginRequest req, String ip, String userAgent) {
         if (req == null) throw new BadRequestException("Body is required");
-        if (req.getEmail() == null || req.getEmail().trim().isEmpty()) {
-            throw new BadRequestException("email is required");
-        }
-        if (req.getPassword() == null || req.getPassword().trim().isEmpty()) {
-            throw new BadRequestException("password is required");
-        }
+        if (isEmpty(req.getEmail())) throw new BadRequestException("email is required");
+        if (isEmpty(req.getPassword())) throw new BadRequestException("password is required");
 
         String email = req.getEmail().trim().toLowerCase();
-        log.info("[Auth][Login] email={}", email);
-
         UserEntity user = userRepository.findByEmailAndActiveTrue(email)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
-        // giả định UserEntity có field passwordHash
-        String hash = user.getPasswordHash();
-        if (hash == null || !encoder.matches(req.getPassword(), hash)) {
-            log.warn("[Auth][Login] invalid credentials email={}", email);
-            throw new BadRequestException("Invalid email or password");
+        if (!matchesPassword(req.getPassword(), user.getPasswordHash())) {
+            log.warn("[Auth][Token] invalid credentials email={}", email);
+            throw new BadCredentialsException("Invalid email or password");
         }
 
-        UserDto dto = userMapper.toDto(user);
+        RefreshTokenService.RefreshIssue refreshIssue = refreshTokenService.issueForUser(user, ip, userAgent);
+        String accessToken = tokenService.createAccessToken(user);
 
-        LoginResponse res = new LoginResponse();
-        res.setUser(dto);
-        return res;
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
+
+        return buildTokenResponse(user, accessToken, refreshIssue.getRefreshToken());
+    }
+
+    @Override
+    @Transactional
+    public AuthTokenResponse refresh(RefreshTokenRequest req, String ip, String userAgent) {
+        if (req == null || isEmpty(req.getRefreshToken())) {
+            throw new BadCredentialsException("Refresh token is required");
+        }
+
+        RefreshTokenService.RefreshIssue refreshIssue =
+                refreshTokenService.rotate(req.getRefreshToken().trim(), ip, userAgent);
+
+        UserEntity user = refreshIssue.getUser();
+        if (!user.isActive()) {
+            refreshTokenService.revokeByToken(refreshIssue.getRefreshToken(), "INACTIVE_USER");
+            throw new BadCredentialsException("User is inactive");
+        }
+
+        String accessToken = tokenService.createAccessToken(user);
+        return buildTokenResponse(user, accessToken, refreshIssue.getRefreshToken());
+    }
+
+    @Override
+    @Transactional
+    public void logout(LogoutRequest req) {
+        if (req == null || isEmpty(req.getRefreshToken())) {
+            return;
+        }
+        refreshTokenService.revokeByToken(req.getRefreshToken().trim(), "LOGOUT");
     }
 
     @Override
     @Transactional(readOnly = true)
-    public UserDto me(String actorUserId) {
-
-        if (actorUserId == null || actorUserId.trim().isEmpty()) {
-            throw new BadRequestException("Missing X-Actor-UserId header");
+    public UserDto me(String userId) {
+        if (isEmpty(userId)) {
+            throw new BadRequestException("Missing authenticated user");
         }
 
-        byte[] userId = uuidBinaryMapper.toBytes(actorUserId.trim());
-
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "User not found: " + actorUserId
-                ));
+        byte[] id = uuidBinaryMapper.toBytes(userId.trim());
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + userId));
 
         if (!user.isActive()) {
             throw new BadRequestException("User is inactive");
         }
 
         return userMapper.toDto(user);
+    }
+
+    private AuthTokenResponse buildTokenResponse(UserEntity user, String accessToken, String refreshToken) {
+        AuthTokenResponse response = new AuthTokenResponse();
+        response.setTokenType("Bearer");
+        response.setAccessToken(accessToken);
+        response.setAccessTokenExpiresIn(tokenService.getAccessTtlSeconds());
+        response.setRefreshToken(refreshToken);
+        response.setRefreshTokenExpiresIn(refreshTokenService.getRefreshTtlSeconds());
+        response.setUser(userMapper.toDto(user));
+        return response;
+    }
+
+    private boolean matchesPassword(String rawPassword, String storedHash) {
+        if (storedHash == null) return false;
+        if (storedHash.startsWith("$2")) {
+            return passwordEncoder.matches(rawPassword, storedHash);
+        }
+        return storedHash.equals(rawPassword);
+    }
+
+    private boolean isEmpty(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }
