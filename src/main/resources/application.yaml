@@ -10,14 +10,14 @@ spring:
     show-sql: true
   datasource:
 #    Host
-#    url: jdbc:mysql://o8e.h.filess.io:3307/newspaper_labelpoint
-#    username: newspaper_labelpoint
-#    password: 93d47ed7621da4a7c081d658a14d59f17ee67c62
+   url: jdbc:mysql://me9cxm.h.filess.io:61002/newspaper_pupileven
+   username: newspaper_pupileven
+   password: 3094c29de58e84927d6d666f45d3ca1f239a8fe4
 #    Local
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/newspaper
-    username: root
-    password: admin
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    # url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/newspaper
+    # username: root
+    # password: admin
+    # driver-class-name: com.mysql.cj.jdbc.Driver
 
 app:
   internal-proxy-key: ${INTERNAL_PROXY_KEY:}
