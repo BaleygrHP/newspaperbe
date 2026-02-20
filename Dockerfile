@@ -1,9 +1,13 @@
 # Build stage (Java 8)
 FROM maven:3.9-eclipse-temurin-8 AS build
 WORKDIR /app
-COPY pom.xml .
+
+# Prime dependency cache first so Railway rebuilds are faster and more stable.
+COPY pom.xml ./
+RUN mvn -B -ntp -DskipTests dependency:go-offline
+
 COPY src ./src
-RUN mvn -q -DskipTests package
+RUN mvn -B -ntp -DskipTests package
 
 # Run stage (Java 8)
 FROM eclipse-temurin:8-jre
