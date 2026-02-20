@@ -8,7 +8,11 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.*;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -17,8 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Servlet filter that enforces the X-Internal-Proxy-Key header on admin and
- * protected auth endpoints. Public endpoints pass through freely.
+ * Servlet filter that enforces X-Internal-Proxy-Key on protected endpoints.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
@@ -39,34 +42,46 @@ public class InternalProxyKeyFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
 
+        // Always allow CORS preflight requests.
+        if ("OPTIONS".equalsIgnoreCase(req.getMethod())) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         String path = req.getRequestURI();
-        // Strip context path if present
         String contextPath = req.getContextPath();
         if (contextPath != null && !contextPath.isEmpty() && path.startsWith(contextPath)) {
             path = path.substring(contextPath.length());
         }
 
-        // Public endpoints – no proxy key needed
-        if (isPublicPath(path)) {
+        if (!requiresProxyKey(path)) {
             chain.doFilter(request, response);
             return;
         }
 
-        // If no key configured, skip check (dev convenience)
+        // If no key configured, skip check for local/dev convenience.
         if (expectedKey == null || expectedKey.isEmpty()) {
             chain.doFilter(request, response);
             return;
         }
 
-        // Check proxy key
         String incoming = req.getHeader(HEADER);
         if (incoming == null || !incoming.equals(expectedKey)) {
-            log.warn("[ProxyKeyFilter] Rejected request to {} – invalid or missing proxy key", path);
+            log.warn("[ProxyKeyFilter] Rejected request to {} - invalid or missing proxy key", path);
             writeError(res, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN", "Invalid or missing proxy key");
             return;
         }
 
         chain.doFilter(request, response);
+    }
+
+    private boolean requiresProxyKey(String path) {
+        if (isPublicPath(path)) {
+            return false;
+        }
+        return path.equals("/api/auth")
+                || path.startsWith("/api/auth/")
+                || path.startsWith("/api/admin/");
     }
 
     private boolean isPublicPath(String path) {

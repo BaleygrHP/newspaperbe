@@ -1,6 +1,7 @@
 package com.hungpham.config;
 
 import com.hungpham.config.security.JwtAuthenticationFilter;
+import org.springframework.http.HttpMethod;
 import com.hungpham.config.security.RestAccessDeniedHandler;
 import com.hungpham.config.security.RestAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +34,7 @@ public class SecurityConfig {
                 .accessDeniedHandler(accessDeniedHandler)
                 .and()
                 .authorizeRequests()
+                .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .antMatchers("/api/public/**").permitAll()
                 .antMatchers("/api/auth/token", "/api/auth/refresh", "/api/auth/logout").permitAll()
                 .antMatchers("/api/health", "/health", "/actuator/health").permitAll()

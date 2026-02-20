@@ -1,23 +1,18 @@
 server:
-  servlet:
-    context-path: /newspaper-project
-  port: 7055
+  port: ${PORT:8080}
 
 spring:
   jpa:
     hibernate:
-      ddl-auto:none
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    properties:
+      hibernate:
+        dialect: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT:org.hibernate.dialect.MySQL8Dialect}
     show-sql: true
   datasource:
-#    Host
-   url: jdbc:mysql://me9cxm.h.filess.io:61002/newspaper_pupileven
-   username: newspaper_pupileven
-   password: 3094c29de58e84927d6d666f45d3ca1f239a8fe4
-#    Local
-    # url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/newspaper
-    # username: root
-    # password: admin
-    # driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/newspaper?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:admin}
 
 app:
   internal-proxy-key: ${INTERNAL_PROXY_KEY:}
