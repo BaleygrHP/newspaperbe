@@ -13,6 +13,6 @@ RUN mvn -B -ntp -DskipTests package
 FROM eclipse-temurin:8-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -Duser.timezone=UTC"
+ENV JAVA_OPTS="-Xms128m -Xmx256m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -Duser.timezone=UTC"
 EXPOSE 8080
 ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar app.jar"]
