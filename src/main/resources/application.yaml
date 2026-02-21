@@ -27,7 +27,7 @@ app:
     max-bytes: ${MEDIA_MAX_BYTES:26214400}
     local-storage:
       root: ${MEDIA_LOCAL_ROOT:./storage/media}
-    allowed-mime-types: ${MEDIA_ALLOWED_MIME_TYPES:image/jpeg,image/png,image/webp,image/gif,image/avif,image/svg+xml,video/mp4,video/webm,application/pdf}
+    allowed-mime-types: ${MEDIA_ALLOWED_MIME_TYPES:image/jpeg,image/png,image/webp,image/gif,image/avif,image/svg+xml,video/mp4,video/webm,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document}
     disallowed-mime-types: ${MEDIA_DISALLOWED_MIME_TYPES:application/x-msdownload,text/html}
     url-fetch:
       connect-timeout-ms: ${MEDIA_URL_CONNECT_TIMEOUT_MS:5000}

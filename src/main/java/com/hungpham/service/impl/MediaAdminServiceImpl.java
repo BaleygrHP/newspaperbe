@@ -59,7 +59,7 @@ public class MediaAdminServiceImpl implements MediaAdminService {
     @Value("${app.media.local-storage.root:./storage/media}")
     private String localStorageRoot;
 
-    @Value("${app.media.allowed-mime-types:image/jpeg,image/png,image/webp,image/gif,image/avif,image/svg+xml,video/mp4,video/webm,application/pdf}")
+    @Value("${app.media.allowed-mime-types:image/jpeg,image/png,image/webp,image/gif,image/avif,image/svg+xml,video/mp4,video/webm,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document}")
     private String allowedMimeTypes;
 
     @Value("${app.media.disallowed-mime-types:application/x-msdownload,text/html}")
@@ -102,6 +102,8 @@ public class MediaAdminServiceImpl implements MediaAdminService {
         registerMime("video/webm", "webm");
         registerMime("video/quicktime", "mov");
         registerMime("application/pdf", "pdf");
+        registerMime("application/msword", "doc");
+        registerMime("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx");
     }
 
     @Override

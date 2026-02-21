@@ -1,10 +1,13 @@
 package com.hungpham.mappers;
 import com.hungpham.dtos.PostDto;
 import com.hungpham.entity.PostEntity;
+import com.hungpham.service.MarkdownRenderService;
 import org.mapstruct.*;
 
 @Mapper(componentModel = "spring", uses = {UuidBinaryMapper.class, DateTimeMapper.class, SectionEnumMapper.class})
 public interface PostMapper {
+    MarkdownRenderService MARKDOWN_RENDER_SERVICE = new MarkdownRenderService();
+
     // Entity -> DTO
     @Mappings({
             @Mapping(target = "id", source = "id", qualifiedByName = "toUuid"),
@@ -36,8 +39,10 @@ public interface PostMapper {
     @Named("contentForDto")
     default String contentForDto(PostEntity entity) {
         if (entity == null) return null;
+        String html = entity.getContentHtml();
+        if (html != null && !html.isEmpty()) return html;
         String md = entity.getContentMd();
-        if (md != null && !md.isEmpty()) return md;
+        if (md != null && !md.isEmpty()) return MARKDOWN_RENDER_SERVICE.renderMarkdownToHtml(md);
         return entity.getContentJson();
     }
 }

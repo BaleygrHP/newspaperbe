@@ -15,6 +15,7 @@ import com.hungpham.mappers.UuidBinaryMapper;
 import com.hungpham.repository.*;
 import com.hungpham.requests.CreatePostRequest;
 import com.hungpham.requests.UpdatePostRequest;
+import com.hungpham.service.MarkdownRenderService;
 import com.hungpham.service.PostAdminService;
 
 import org.slf4j.Logger;
@@ -54,6 +55,8 @@ public class PostAdminServiceImpl implements PostAdminService {
     private PostMapper postMapper;
     @Autowired
     private UuidBinaryMapper uuidBinaryMapper;
+    @Autowired
+    private MarkdownRenderService markdownRenderService;
 
     // =========================
     // CREATE DRAFT
@@ -69,7 +72,7 @@ public class PostAdminServiceImpl implements PostAdminService {
             throw new BadRequestException("Title is required");
         if (isEmpty(req.getSectionId()) && isEmpty(req.getSection()))
             throw new BadRequestException("Section is required");
-        if (req.getContentJson() == null && req.getContent() == null)
+        if (!hasAnyContent(req.getContentJson(), req.getContentHtml(), req.getContentMd(), req.getContent()))
             throw new BadRequestException("content is required");
 
         UserEntity actor = mustGetUser(actorUserId);
@@ -101,16 +104,15 @@ public class PostAdminServiceImpl implements PostAdminService {
 
         post.setStatus(PostStatusEnum.DRAFT);
 
-        String normalizedContentJson = resolveContentJson(req.getContentJson(), req.getContent());
-        post.setContentJson(normalizedContentJson);
-        if (!isEmpty(req.getContentMd())) {
-            post.setContentMd(req.getContentMd());
-        } else if (!isEmpty(req.getContent())) {
-            // Keep markdown/text editor content in a readable field for FE round-trip.
-            post.setContentMd(req.getContent());
-        }
-        post.setContentHtml(req.getContentHtml());
-        post.setContentText(req.getContentText());
+        ContentPayload contentPayload = resolveContentPayload(
+                req.getContentJson(),
+                req.getContentHtml(),
+                req.getContentMd(),
+                req.getContent());
+        post.setContentJson(contentPayload.getContentJson());
+        post.setContentMd(contentPayload.getContentMd());
+        post.setContentHtml(contentPayload.getContentHtml());
+        post.setContentText(resolveContentText(req.getContentText(), contentPayload.getContentHtml()));
         post.setCreatedDate(LocalDateTime.now());
         post.setUpdatedDate(LocalDateTime.now());
         log.info("[AdminPost][CreateDraft] created postId={}, {}", post.getCreatedDate(), post.getUpdatedDate());
@@ -169,19 +171,24 @@ public class PostAdminServiceImpl implements PostAdminService {
             }
         }
 
-        if (req.getContentJson() != null || req.getContent() != null) {
-            String normalizedContentJson = resolveContentJson(req.getContentJson(), req.getContent());
-            post.setContentJson(normalizedContentJson);
+        boolean markdownTouched = req.getContentMd() != null || req.getContent() != null;
+        boolean htmlTouched = req.getContentHtml() != null;
+        boolean contentTouched = req.getContentJson() != null
+                || htmlTouched
+                || markdownTouched;
+        if (contentTouched) {
+            ContentPayload contentPayload = resolveContentPayloadForUpdate(req, post, markdownTouched, htmlTouched);
+            post.setContentJson(contentPayload.getContentJson());
+            post.setContentMd(contentPayload.getContentMd());
+            post.setContentHtml(contentPayload.getContentHtml());
+            if (req.getContentText() == null && (markdownTouched || htmlTouched)) {
+                post.setContentText(resolveContentText(null, contentPayload.getContentHtml()));
+            }
         }
 
-        if (req.getContentMd() != null)
-            post.setContentMd(req.getContentMd());
-        else if (req.getContent() != null)
-            post.setContentMd(req.getContent());
-        if (req.getContentHtml() != null)
-            post.setContentHtml(req.getContentHtml());
-        if (req.getContentText() != null)
+        if (req.getContentText() != null) {
             post.setContentText(req.getContentText());
+        }
 
         PostEntity saved = postRepository.save(post);
 
@@ -473,17 +480,65 @@ public class PostAdminServiceImpl implements PostAdminService {
         return s == null || s.trim().isEmpty();
     }
 
-    private String resolveContentJson(String contentJson, String content) {
+    private ContentPayload resolveContentPayload(String contentJson, String contentHtml, String contentMd, String content) {
+        String resolvedMd = contentMd != null ? contentMd : content;
+        String resolvedHtml = contentHtml;
+
+        if (isEmpty(resolvedHtml) && !isEmpty(resolvedMd)) {
+            resolvedHtml = markdownRenderService.renderMarkdownToHtml(resolvedMd);
+        }
+
+        String normalizedContentJson = resolveContentJson(contentJson, resolvedHtml, resolvedMd);
+        return new ContentPayload(normalizedContentJson, resolvedHtml, resolvedMd);
+    }
+
+    private ContentPayload resolveContentPayloadForUpdate(UpdatePostRequest req,
+                                                          PostEntity post,
+                                                          boolean markdownTouched,
+                                                          boolean htmlTouched) {
+        String resolvedMd = markdownTouched
+                ? (req.getContentMd() != null ? req.getContentMd() : req.getContent())
+                : post.getContentMd();
+        String resolvedHtml = htmlTouched ? req.getContentHtml() : post.getContentHtml();
+
+        if ((markdownTouched || htmlTouched) && isEmpty(resolvedHtml) && !isEmpty(resolvedMd)) {
+            resolvedHtml = markdownRenderService.renderMarkdownToHtml(resolvedMd);
+        }
+
+        String resolvedJson;
+        if (req.getContentJson() != null) {
+            resolvedJson = resolveContentJson(req.getContentJson(), resolvedHtml, resolvedMd);
+        } else if (markdownTouched || htmlTouched) {
+            resolvedJson = resolveContentJson(null, resolvedHtml, resolvedMd);
+        } else {
+            resolvedJson = post.getContentJson();
+        }
+
+        return new ContentPayload(resolvedJson, resolvedHtml, resolvedMd);
+    }
+
+    private String resolveContentJson(String contentJson, String contentHtml, String contentMd) {
         if (!isEmpty(contentJson)) {
             String normalized = contentJson.trim();
             ensureValidJson(normalized, "contentJson");
             return normalized;
         }
 
-        if (!isEmpty(content)) {
+        if (!isEmpty(contentHtml)) {
             Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("raw", content);
-            payload.put("type", "text");
+            payload.put("raw", contentHtml);
+            payload.put("type", "html");
+            try {
+                return OBJECT_MAPPER.writeValueAsString(payload);
+            } catch (JsonProcessingException e) {
+                throw new BadRequestException("content is invalid");
+            }
+        }
+
+        if (!isEmpty(contentMd)) {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("raw", contentMd);
+            payload.put("type", "markdown");
             try {
                 return OBJECT_MAPPER.writeValueAsString(payload);
             } catch (JsonProcessingException e) {
@@ -492,6 +547,24 @@ public class PostAdminServiceImpl implements PostAdminService {
         }
 
         throw new BadRequestException("content is required");
+    }
+
+    private String resolveContentText(String providedContentText, String contentHtml) {
+        if (providedContentText != null) {
+            return providedContentText;
+        }
+        if (isEmpty(contentHtml)) {
+            return null;
+        }
+        return markdownRenderService.extractPlainText(contentHtml);
+    }
+
+    private boolean hasAnyContent(String... values) {
+        if (values == null) return false;
+        for (String value : values) {
+            if (!isEmpty(value)) return true;
+        }
+        return false;
     }
 
     private void ensureValidJson(String json, String fieldName) {
@@ -507,5 +580,29 @@ public class PostAdminServiceImpl implements PostAdminService {
             return null;
         String t = q.trim();
         return t.isEmpty() ? null : t;
+    }
+
+    private static class ContentPayload {
+        private final String contentJson;
+        private final String contentHtml;
+        private final String contentMd;
+
+        private ContentPayload(String contentJson, String contentHtml, String contentMd) {
+            this.contentJson = contentJson;
+            this.contentHtml = contentHtml;
+            this.contentMd = contentMd;
+        }
+
+        public String getContentJson() {
+            return contentJson;
+        }
+
+        public String getContentHtml() {
+            return contentHtml;
+        }
+
+        public String getContentMd() {
+            return contentMd;
+        }
     }
 }

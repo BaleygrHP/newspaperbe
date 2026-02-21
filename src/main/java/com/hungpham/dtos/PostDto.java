@@ -13,6 +13,7 @@ public class PostDto extends AbstractDto<PostDto> {
     private String subtitle;
     private String excerpt;
     private String contentMd;
+    private String contentHtml;
     private String content;
 
     private String slug;
